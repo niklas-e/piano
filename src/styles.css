@@ -376,8 +376,12 @@ section h1 {
   letter-spacing: -0.06em;
 }
 
-.pulse.is-running {
-  animation: pulse-pop 600ms ease-in-out infinite alternate;
+.pulse.is-running.pulse-odd {
+  animation: pulse-pop var(--pulse-duration) ease-out 1;
+}
+
+.pulse.is-running.pulse-even {
+  animation: pulse-pop-alt var(--pulse-duration) ease-out 1;
 }
 
 .metronome-actions {
@@ -392,16 +396,26 @@ section h1 {
 }
 
 @keyframes pulse-pop {
-  from {
+  0% {
+    transform: scale(1.025);
+  }
+  100% {
     transform: scale(1);
   }
-  to {
+}
+
+@keyframes pulse-pop-alt {
+  0% {
     transform: scale(1.025);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pulse.is-running {
+  .pulse.is-running.pulse-odd,
+  .pulse.is-running.pulse-even {
     animation: none;
     outline: 3px solid #d46a2c;
   }

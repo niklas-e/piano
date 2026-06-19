@@ -14,6 +14,12 @@ test("exercise lookup returns known exercises", () => {
   assert.equal(getExerciseById("missing-exercise"), undefined);
 });
 
+test("sharp-only bundled catalog omits flat-required misspellings", () => {
+  assert.equal(getExerciseById("d-natural-minor-scale"), undefined);
+  assert.deepEqual(getExerciseById("f-sharp-natural-minor-scale")?.notes, ["F#", "G#", "A", "B", "C#", "D", "E", "F#"]);
+  assert.equal(exercises.some((exercise) => exercise.notes.includes("A#")), false);
+});
+
 test("validation rejects invalid ids and mismatched fingering", () => {
   const invalidExercise: Exercise = {
     id: "Bad Id",

@@ -23,60 +23,48 @@ const hands = new Set<Hand>(["right", "left"]);
 const urlSafeIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export function readBpmPreference(storage = getBrowserStorage()): number {
-  const rawValue = storage?.getItem(keys.bpm);
+  const rawValue = readStorageItem(storage, keys.bpm);
   const bpm = rawValue === null || rawValue === undefined ? NaN : Number(rawValue);
 
   return isValidBpm(bpm) ? bpm : DEFAULT_BPM;
 }
 
 export function writeBpmPreference(bpm: number, storage = getBrowserStorage()): void {
-  if (!storage) {
-    return;
-  }
-
-  storage.setItem(keys.bpm, String(isValidBpm(bpm) ? bpm : DEFAULT_BPM));
+  writeStorageItem(storage, keys.bpm, String(isValidBpm(bpm) ? bpm : DEFAULT_BPM));
 }
 
 export function readExerciseTypeFilterPreference(storage = getBrowserStorage()): ExerciseTypeFilter {
-  const rawValue = storage?.getItem(keys.exerciseTypeFilter);
+  const rawValue = readStorageItem(storage, keys.exerciseTypeFilter);
 
   return isExerciseTypeFilter(rawValue) ? rawValue : "all";
 }
 
 export function writeExerciseTypeFilterPreference(value: ExerciseTypeFilter, storage = getBrowserStorage()): void {
-  if (!storage) {
-    return;
-  }
-
-  storage.setItem(keys.exerciseTypeFilter, isExerciseTypeFilter(value) ? value : "all");
+  writeStorageItem(storage, keys.exerciseTypeFilter, isExerciseTypeFilter(value) ? value : "all");
 }
 
 export function readHandPreference(storage = getBrowserStorage()): Hand {
-  const rawValue = storage?.getItem(keys.hand);
+  const rawValue = readStorageItem(storage, keys.hand);
 
   return isHand(rawValue) ? rawValue : "right";
 }
 
 export function writeHandPreference(value: Hand, storage = getBrowserStorage()): void {
-  if (!storage) {
-    return;
-  }
-
-  storage.setItem(keys.hand, isHand(value) ? value : "right");
+  writeStorageItem(storage, keys.hand, isHand(value) ? value : "right");
 }
 
 export function readLastExerciseIdPreference(storage = getBrowserStorage()): string | undefined {
-  const rawValue = storage?.getItem(keys.lastExerciseId);
+  const rawValue = readStorageItem(storage, keys.lastExerciseId);
 
   return rawValue !== null && rawValue !== undefined && urlSafeIdPattern.test(rawValue) ? rawValue : undefined;
 }
 
 export function writeLastExerciseIdPreference(id: string, storage = getBrowserStorage()): void {
-  if (!storage || !urlSafeIdPattern.test(id)) {
+  if (!urlSafeIdPattern.test(id)) {
     return;
   }
 
-  storage.setItem(keys.lastExerciseId, id);
+  writeStorageItem(storage, keys.lastExerciseId, id);
 }
 
 function isValidBpm(value: number): boolean {
@@ -96,5 +84,21 @@ function getBrowserStorage(): StorageLike | undefined {
     return typeof window === "undefined" ? undefined : window.localStorage;
   } catch {
     return undefined;
+  }
+}
+
+function readStorageItem(storage: StorageLike | undefined, key: string): string | null | undefined {
+  try {
+    return storage?.getItem(key);
+  } catch {
+    return undefined;
+  }
+}
+
+function writeStorageItem(storage: StorageLike | undefined, key: string, value: string): void {
+  try {
+    storage?.setItem(key, value);
+  } catch {
+    // Storage may be disabled, private, or full. Preferences are optional.
   }
 }

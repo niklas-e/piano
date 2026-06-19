@@ -1,7 +1,7 @@
 import { For, Match, Show, Switch, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import { exercises, getExerciseById, type Exercise, type Hand } from "./exercises";
 import { buildKeyboard, isHighlightedKey } from "./keyboard";
-import { clampBpm, createMetronomeEngine } from "./metronome";
+import { clampBpm, createMetronomeEngine, msPerBeat } from "./metronome";
 import {
   readBpmPreference,
   readExerciseTypeFilterPreference,
@@ -340,6 +340,8 @@ function MetronomeControls(props: { variant: "full" | "compact" }) {
   const isCompact = () => props.variant === "compact";
   const startLabel = () => (isCompact() ? "Start compact metronome" : "Start metronome");
   const stopLabel = () => (isCompact() ? "Stop compact metronome" : "Stop metronome");
+  const pulseAnimationDuration = () => Math.min(300, Math.max(120, Math.round(msPerBeat(bpm()) * 0.35)));
+  const pulseClass = () => (pulseCount() === 0 ? "" : pulseCount() % 2 === 0 ? " pulse-even" : " pulse-odd");
 
   return (
     <div class={`metronome-card ${isCompact() ? "compact" : "full"}`}>
@@ -363,7 +365,11 @@ function MetronomeControls(props: { variant: "full" | "compact" }) {
         </button>
       </div>
 
-      <div class={`pulse ${isRunning() ? "is-running" : ""}`} aria-live="polite">
+      <div
+        class={`pulse ${isRunning() ? "is-running" : ""}${isRunning() ? pulseClass() : ""}`}
+        style={{ "--pulse-duration": `${pulseAnimationDuration()}ms` }}
+        aria-live="polite"
+      >
         <span>{bpm()} BPM</span>
         <strong>Visual pulse</strong>
         <small>Beat {pulseCount()}</small>
@@ -371,7 +377,7 @@ function MetronomeControls(props: { variant: "full" | "compact" }) {
 
       <div class="metronome-actions">
         <button type="button" class="primary-button" onClick={toggle} aria-label={isRunning() ? stopLabel() : startLabel()}>
-          {isRunning() ? "Stop" : "Start"}
+          {isRunning() ? stopLabel() : startLabel()}
         </button>
         <Show when={audioError()}>
           {(message) => <p class="audio-message">{message()}</p>}

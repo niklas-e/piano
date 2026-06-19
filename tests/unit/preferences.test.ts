@@ -57,11 +57,36 @@ test("last exercise id preference keeps only url-safe ids", () => {
   assert.equal(readLastExerciseIdPreference(storage), undefined);
 });
 
+test("preference helpers tolerate throwing storage reads and writes", () => {
+  const storage = throwingStorage();
+
+  assert.equal(readBpmPreference(storage), 80);
+  assert.equal(readExerciseTypeFilterPreference(storage), "all");
+  assert.equal(readHandPreference(storage), "right");
+  assert.equal(readLastExerciseIdPreference(storage), undefined);
+
+  assert.doesNotThrow(() => writeBpmPreference(120, storage));
+  assert.doesNotThrow(() => writeExerciseTypeFilterPreference("scale", storage));
+  assert.doesNotThrow(() => writeHandPreference("left", storage));
+  assert.doesNotThrow(() => writeLastExerciseIdPreference("c-major-scale", storage));
+});
+
 function memoryStorage(): StorageLike {
   const values = new Map<string, string>();
 
   return {
     getItem: (key) => values.get(key) ?? null,
     setItem: (key, value) => values.set(key, value)
+  };
+}
+
+function throwingStorage(): StorageLike {
+  return {
+    getItem() {
+      throw new Error("storage read blocked");
+    },
+    setItem() {
+      throw new Error("storage write blocked");
+    }
   };
 }
