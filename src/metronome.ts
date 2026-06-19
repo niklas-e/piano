@@ -53,6 +53,10 @@ export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
   };
 
   const reportAudioError = () => {
+    if (audioError === audioUnavailableMessage) {
+      return;
+    }
+
     audioError = audioUnavailableMessage;
     for (const listener of audioErrorListeners) {
       listener(audioUnavailableMessage);
@@ -64,16 +68,20 @@ export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
       return;
     }
 
-    const oscillator = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    oscillator.frequency.value = 880;
-    gain.gain.setValueAtTime(0.001, time);
-    gain.gain.exponentialRampToValueAtTime(0.4, time + 0.002);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.045);
-    oscillator.connect(gain);
-    gain.connect(audioContext.destination);
-    oscillator.start(time);
-    oscillator.stop(time + 0.05);
+    try {
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.frequency.value = 880;
+      gain.gain.setValueAtTime(0.001, time);
+      gain.gain.exponentialRampToValueAtTime(0.4, time + 0.002);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.045);
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start(time);
+      oscillator.stop(time + 0.05);
+    } catch {
+      reportAudioError();
+    }
   };
 
   const scheduler = () => {

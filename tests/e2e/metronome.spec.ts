@@ -73,3 +73,34 @@ test("metronome shows audio-unavailable message when Web Audio resume fails asyn
   await expect(page.getByText("Visual pulse", { exact: true })).toBeVisible();
   await expect(page.getByText("Audio click unavailable. Visual pulse is still active.")).toBeVisible();
 });
+
+test("metronome keeps visual pulse running when Web Audio graph creation fails", async ({ page }) => {
+  await page.addInitScript(() => {
+    class ThrowingGraphAudioContext {
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        throw new Error("oscillator unavailable");
+      }
+      createGain() {
+        throw new Error("gain unavailable");
+      }
+      resume() {
+        return Promise.resolve();
+      }
+      close() {
+        return Promise.resolve();
+      }
+    }
+
+    window.AudioContext = ThrowingGraphAudioContext as unknown as typeof AudioContext;
+    window.webkitAudioContext = undefined;
+  });
+
+  await page.goto("/metronome");
+  await page.getByRole("button", { name: "Start metronome" }).click();
+
+  await expect(page.getByRole("button", { name: "Stop metronome" })).toBeVisible();
+  await expect(page.getByText("Visual pulse", { exact: true })).toBeVisible();
+  await expect(page.getByText("Audio click unavailable. Visual pulse is still active.")).toBeVisible();
+});
