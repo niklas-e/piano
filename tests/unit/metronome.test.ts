@@ -79,19 +79,98 @@ test("metronome engine reports asynchronous audio resume failures", async () => 
   }
 });
 
-test("metronome engine keeps visual pulses running when audio graph scheduling throws", () => {
+test("metronome engine keeps visual pulses on BPM after async resume failure freezes audio time", async () => {
+  const originalPerformance = globalThis.performance;
   const originalWindow = globalThis.window;
   let intervalCallback: (() => void) | undefined;
-  let currentTime = 0;
+  let performanceNow = 1_000;
+  const pulses: number[] = [];
+
+  class FrozenRejectingAudioContext {
+    currentTime = 0;
+    destination = {};
+    createOscillator() {
+      return {
+        connect() {},
+        frequency: { value: 0 },
+        start() {},
+        stop() {}
+      };
+    }
+    createGain() {
+      return {
+        connect() {},
+        gain: {
+          exponentialRampToValueAtTime() {},
+          setValueAtTime() {}
+        }
+      };
+    }
+    resume() {
+      return Promise.reject(new Error("resume blocked"));
+    }
+    close() {
+      return Promise.resolve();
+    }
+  }
+
+  Object.defineProperty(globalThis, "performance", {
+    configurable: true,
+    value: {
+      now: () => performanceNow
+    }
+  });
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: {
+      AudioContext: FrozenRejectingAudioContext,
+      clearInterval() {},
+      setInterval(callback: () => void) {
+        intervalCallback = callback;
+        return 1;
+      }
+    }
+  });
+
+  try {
+    const engine = createMetronomeEngine(120);
+    engine.onPulse((beat) => pulses.push(beat));
+
+    engine.start();
+    await Promise.resolve();
+    performanceNow += 500;
+    intervalCallback?.();
+    performanceNow += 500;
+    intervalCallback?.();
+
+    assert.deepEqual(pulses, [1, 2, 3]);
+    assert.equal(engine.getAudioError(), "Audio click unavailable. Visual pulse is still active.");
+
+    engine.dispose();
+  } finally {
+    Object.defineProperty(globalThis, "performance", {
+      configurable: true,
+      value: originalPerformance
+    });
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: originalWindow
+    });
+  }
+});
+
+test("metronome engine keeps visual pulses running when audio graph scheduling throws", () => {
+  const originalPerformance = globalThis.performance;
+  const originalWindow = globalThis.window;
+  let intervalCallback: (() => void) | undefined;
+  let performanceNow = 1_000;
   let audioError: string | undefined;
   let audioErrorCount = 0;
   const pulses: number[] = [];
 
   class ThrowingAudioContext {
     destination = {};
-    get currentTime() {
-      return currentTime;
-    }
+    currentTime = 0;
     createOscillator() {
       throw new Error("oscillator unavailable");
     }
@@ -106,6 +185,12 @@ test("metronome engine keeps visual pulses running when audio graph scheduling t
     }
   }
 
+  Object.defineProperty(globalThis, "performance", {
+    configurable: true,
+    value: {
+      now: () => performanceNow
+    }
+  });
   Object.defineProperty(globalThis, "window", {
     configurable: true,
     value: {
@@ -127,7 +212,7 @@ test("metronome engine keeps visual pulses running when audio graph scheduling t
     });
 
     assert.doesNotThrow(() => engine.start());
-    currentTime = 0.5;
+    performanceNow += 500;
     intervalCallback?.();
 
     assert.deepEqual(pulses, [1, 2]);
@@ -137,6 +222,10 @@ test("metronome engine keeps visual pulses running when audio graph scheduling t
 
     engine.dispose();
   } finally {
+    Object.defineProperty(globalThis, "performance", {
+      configurable: true,
+      value: originalPerformance
+    });
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: originalWindow

@@ -72,6 +72,12 @@ test("metronome shows audio-unavailable message when Web Audio resume fails asyn
   await expect(page.getByRole("button", { name: "Stop metronome" })).toBeVisible();
   await expect(page.getByText("Visual pulse", { exact: true })).toBeVisible();
   await expect(page.getByText("Audio click unavailable. Visual pulse is still active.")).toBeVisible();
+  await expect
+    .poll(async () => {
+      const beatText = await page.locator(".pulse small").textContent();
+      return Number(beatText?.replace("Beat ", ""));
+    })
+    .toBeGreaterThan(1);
 });
 
 test("metronome keeps visual pulse running when Web Audio graph creation fails", async ({ page }) => {

@@ -39,11 +39,13 @@ export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
   let intervalId: number | undefined;
   let nextBeatTime = 0;
   let fallbackStartTime = 0;
+  let useFallbackClock = false;
   let beat = 0;
   const listeners = new Set<(beat: number) => void>();
   const audioErrorListeners = new Set<(message: string) => void>();
 
-  const currentTime = () => audioContext?.currentTime ?? (performance.now() - fallbackStartTime) / 1000;
+  const fallbackCurrentTime = () => (performance.now() - fallbackStartTime) / 1000;
+  const currentTime = () => (useFallbackClock ? fallbackCurrentTime() : audioContext?.currentTime ?? fallbackCurrentTime());
 
   const emitPulse = () => {
     beat += 1;
@@ -53,6 +55,8 @@ export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
   };
 
   const reportAudioError = () => {
+    useFallbackClock = true;
+
     if (audioError === audioUnavailableMessage) {
       return;
     }
@@ -64,7 +68,7 @@ export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
   };
 
   const scheduleClick = (time: number) => {
-    if (!audioContext) {
+    if (!audioContext || useFallbackClock) {
       return;
     }
 
@@ -110,7 +114,7 @@ export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
         reportAudioError();
       }
 
-      fallbackStartTime = performance.now();
+      fallbackStartTime = performance.now() - (audioContext?.currentTime ?? 0) * 1000;
       nextBeatTime = currentTime();
       scheduler();
       intervalId = window.setInterval(scheduler, schedulerIntervalMs);
