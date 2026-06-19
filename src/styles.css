@@ -412,3 +412,28 @@ section h1 {
     grid-template-columns: 1fr;
   }
 }
+
+:focus-visible {
+  outline: 3px solid #d46a2c;
+  outline-offset: 3px;
+}
+
+@media (max-width: 420px) {
+  .content {
+    padding-inline: 0.85rem;
+  }
+
+  .site-nav {
+    width: 100%;
+  }
+
+  .site-nav a {
+    text-align: center;
+    width: 100%;
+  }
+
+  .keyboard-scroll {
+    margin-inline: -0.85rem;
+    padding-inline: 0.85rem;
+  }
+}
