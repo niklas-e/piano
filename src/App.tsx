@@ -1,4 +1,11 @@
-import { Match, Switch, createSignal, onCleanup, onMount } from "solid-js";
+import { For, Match, Show, Switch, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import { exercises, getExerciseById, type Exercise } from "./exercises";
+import {
+  readExerciseTypeFilterPreference,
+  readLastExerciseIdPreference,
+  writeExerciseTypeFilterPreference,
+  type ExerciseTypeFilter
+} from "./preferences";
 import { parsePathname } from "./routes";
 
 export default function App() {
@@ -64,11 +71,97 @@ function HomePage() {
 }
 
 function ExercisesPage() {
+  const [search, setSearch] = createSignal("");
+  const [typeFilter, setTypeFilter] = createSignal<ExerciseTypeFilter>(readExerciseTypeFilterPreference());
+  const lastExercise = () => {
+    const id = readLastExerciseIdPreference();
+    return id ? getExerciseById(id) : undefined;
+  };
+  const filteredExercises = createMemo(() => {
+    const normalizedSearch = search().trim().toLowerCase();
+    const selectedType = typeFilter();
+
+    return exercises.filter((exercise) => {
+      const matchesType = selectedType === "all" || exercise.type === selectedType;
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        exercise.title.toLowerCase().includes(normalizedSearch) ||
+        exercise.tonic.toLowerCase().includes(normalizedSearch);
+
+      return matchesType && matchesSearch;
+    });
+  });
+
+  const updateTypeFilter = (value: string) => {
+    const nextValue = value as ExerciseTypeFilter;
+    setTypeFilter(nextValue);
+    writeExerciseTypeFilterPreference(nextValue);
+  };
+
   return (
-    <section aria-labelledby="exercises-heading">
-      <h1 id="exercises-heading">Exercises</h1>
-      <p>Scales and arpeggios will appear here.</p>
+    <section aria-labelledby="exercises-heading" class="stack">
+      <div class="section-intro">
+        <p class="eyebrow">Plain technical reference</p>
+        <h1 id="exercises-heading">Exercises</h1>
+        <p>Search scales and arpeggios directly. No grades, levels, dashboards, or exam labels.</p>
+      </div>
+
+      <Show when={lastExercise()}>
+        {(exercise) => (
+          <a class="continue-card" href={`/exercises/${exercise().id}`}>
+            Continue with {exercise().title}
+          </a>
+        )}
+      </Show>
+
+      <div class="catalog-controls">
+        <label>
+          <span>Search exercises</span>
+          <input
+            value={search()}
+            onInput={(event) => setSearch(event.currentTarget.value)}
+            type="search"
+            placeholder="C major, arpeggio, A..."
+          />
+        </label>
+        <label>
+          <span>Exercise type</span>
+          <select value={typeFilter()} onChange={(event) => updateTypeFilter(event.currentTarget.value)}>
+            <option value="all">All exercises</option>
+            <option value="scale">Scales</option>
+            <option value="arpeggio">Arpeggios</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="exercise-grid" aria-label="Exercise catalog">
+        <For each={filteredExercises()}>
+          {(exercise) => <ExerciseCard exercise={exercise} />}
+        </For>
+      </div>
+
+      <Show when={filteredExercises().length === 0}>
+        <p class="empty-state">No exercises match the current search.</p>
+      </Show>
     </section>
+  );
+}
+
+function ExerciseCard(props: { exercise: Exercise }) {
+  const typeLabel = () => (props.exercise.type === "scale" ? "Scale" : "Arpeggio");
+
+  return (
+    <article class="exercise-card">
+      <div class="card-meta">
+        <span>{typeLabel()}</span>
+        <span>{props.exercise.tonic}</span>
+        <span>{props.exercise.range}</span>
+      </div>
+      <h2>
+        <a href={`/exercises/${props.exercise.id}`}>{props.exercise.title}</a>
+      </h2>
+      <p>{props.exercise.notes.join(" - ")}</p>
+    </article>
   );
 }
 
