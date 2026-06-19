@@ -1,9 +1,13 @@
-import { For, Match, Show, Switch, createMemo, createSignal, onCleanup, onMount } from "solid-js";
-import { exercises, getExerciseById, type Exercise } from "./exercises";
+import { For, Match, Show, Switch, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import { exercises, getExerciseById, type Exercise, type Hand } from "./exercises";
+import { buildKeyboard, isHighlightedKey } from "./keyboard";
 import {
   readExerciseTypeFilterPreference,
+  readHandPreference,
   readLastExerciseIdPreference,
   writeExerciseTypeFilterPreference,
+  writeHandPreference,
+  writeLastExerciseIdPreference,
   type ExerciseTypeFilter
 } from "./preferences";
 import { parsePathname } from "./routes";
@@ -44,8 +48,11 @@ export default function App() {
           <Match when={route().name === "exercises"}>
             <ExercisesPage />
           </Match>
-          <Match when={route().name === "exercise"}>
-            <ExercisePlaceholder />
+          <Match when={route().name === "exercise" && route()}>
+            {(matchedRoute) => {
+              const currentRoute = matchedRoute();
+              return currentRoute.name === "exercise" ? <ExercisePage id={currentRoute.id} /> : null;
+            }}
           </Match>
           <Match when={route().name === "metronome"}>
             <MetronomePage />
@@ -165,11 +172,115 @@ function ExerciseCard(props: { exercise: Exercise }) {
   );
 }
 
-function ExercisePlaceholder() {
+function ExercisePage(props: { id: string }) {
+  const exercise = () => getExerciseById(props.id);
+
   return (
-    <section aria-labelledby="exercise-heading">
-      <h1 id="exercise-heading">Exercise</h1>
-      <p>Exercise details will appear here.</p>
+    <Show when={exercise()} fallback={<ExerciseNotFoundPage />}>
+      {(selectedExercise) => <ExerciseDetail exercise={selectedExercise()} />}
+    </Show>
+  );
+}
+
+function ExerciseDetail(props: { exercise: Exercise }) {
+  const [hand, setHand] = createSignal<Hand>(readHandPreference());
+  const keyboardKeys = buildKeyboard(3, 5);
+
+  createEffect(() => {
+    writeLastExerciseIdPreference(props.exercise.id);
+  });
+
+  const updateHand = (value: string) => {
+    const nextHand = value === "left" ? "left" : "right";
+    setHand(nextHand);
+    writeHandPreference(nextHand);
+  };
+
+  const selectedFingering = () => props.exercise.fingering[hand()];
+
+  return (
+    <section aria-labelledby="exercise-heading" class="stack">
+      <div class="section-intro">
+        <p class="eyebrow">{props.exercise.type === "scale" ? "Scale" : "Arpeggio"}</p>
+        <h1 id="exercise-heading">{props.exercise.title}</h1>
+        <p>{props.exercise.description}</p>
+      </div>
+
+      <dl class="summary-grid">
+        <div>
+          <dt>Tonic</dt>
+          <dd>{props.exercise.tonic}</dd>
+        </div>
+        <div>
+          <dt>Quality</dt>
+          <dd>{props.exercise.quality}</dd>
+        </div>
+        <div>
+          <dt>Range</dt>
+          <dd>{props.exercise.range}</dd>
+        </div>
+      </dl>
+
+      <label class="hand-select">
+        <span>Hand</span>
+        <select value={hand()} onChange={(event) => updateHand(event.currentTarget.value)}>
+          <option value="right">Right hand</option>
+          <option value="left">Left hand</option>
+        </select>
+      </label>
+
+      <div class="practice-grid">
+        <section class="practice-panel" aria-labelledby="notes-heading">
+          <h2 id="notes-heading">Notes</h2>
+          <p class="sequence">{props.exercise.notes.join(" - ")}</p>
+        </section>
+        <section class="practice-panel" aria-labelledby="fingering-heading">
+          <h2 id="fingering-heading">Fingering</h2>
+          <p class="sequence">{selectedFingering().join(" - ")}</p>
+        </section>
+      </div>
+
+      <div class="keyboard-scroll" role="group" aria-label="Practice keyboard">
+        <div class="keyboard">
+          <For each={keyboardKeys}>
+            {(key) => {
+              const highlighted = () => isHighlightedKey(key, props.exercise.notes);
+              const firstFingerForNote = () => {
+                const noteIndex = props.exercise.notes.indexOf(key.note);
+                return noteIndex >= 0 ? selectedFingering()[noteIndex] : undefined;
+              };
+
+              return (
+                <div
+                  class={`piano-key ${key.type}${highlighted() ? " is-highlighted" : ""}`}
+                  data-testid={`key-${key.id}`}
+                  aria-label={`${key.note}${key.octave}${highlighted() ? " highlighted" : ""}`}
+                >
+                  <span>{key.note}</span>
+                  <Show when={highlighted() && firstFingerForNote()}>
+                    {(finger) => <strong>{finger()}</strong>}
+                  </Show>
+                </div>
+              );
+            }}
+          </For>
+        </div>
+      </div>
+
+      <section class="compact-metronome" aria-labelledby="compact-metronome-heading">
+        <h2 id="compact-metronome-heading">Compact metronome</h2>
+        <p>Metronome controls will appear here.</p>
+      </section>
+    </section>
+  );
+}
+
+function ExerciseNotFoundPage() {
+  return (
+    <section aria-labelledby="exercise-not-found-heading" class="stack">
+      <h1 id="exercise-not-found-heading">Exercise not found</h1>
+      <p>The selected exercise is not in the catalog.</p>
+      <a class="button-link" href="/exercises">Back to exercises</a>
     </section>
   );
 }
