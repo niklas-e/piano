@@ -1,6 +1,7 @@
 node_modules/
 .pnpm-store/
 dist/
+.superpowers/
 tsconfig.tsbuildinfo
 .DS_Store
 *.local
