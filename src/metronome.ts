@@ -11,10 +11,12 @@ export type MetronomeEngine = {
   stop(): void;
   setBpm(bpm: number): void;
   onPulse(callback: (beat: number) => void): () => void;
+  onAudioError(callback: (message: string) => void): () => void;
   getAudioError(): string | undefined;
   dispose(): void;
 };
 
+const audioUnavailableMessage = "Audio click unavailable. Visual pulse is still active.";
 const schedulerIntervalMs = 25;
 const scheduleAheadSeconds = 0.1;
 
@@ -39,6 +41,7 @@ export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
   let fallbackStartTime = 0;
   let beat = 0;
   const listeners = new Set<(beat: number) => void>();
+  const audioErrorListeners = new Set<(message: string) => void>();
 
   const currentTime = () => audioContext?.currentTime ?? (performance.now() - fallbackStartTime) / 1000;
 
@@ -46,6 +49,13 @@ export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
     beat += 1;
     for (const listener of listeners) {
       listener(beat);
+    }
+  };
+
+  const reportAudioError = () => {
+    audioError = audioUnavailableMessage;
+    for (const listener of audioErrorListeners) {
+      listener(audioUnavailableMessage);
     }
   };
 
@@ -83,13 +93,13 @@ export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
       try {
         const AudioContextConstructor = window.AudioContext ?? window.webkitAudioContext;
         if (!AudioContextConstructor) {
-          audioError = "Audio click unavailable. Visual pulse is still active.";
+          reportAudioError();
         } else if (!audioContext) {
           audioContext = new AudioContextConstructor();
         }
-        void audioContext?.resume();
+        void audioContext?.resume().catch(reportAudioError);
       } catch {
-        audioError = "Audio click unavailable. Visual pulse is still active.";
+        reportAudioError();
       }
 
       fallbackStartTime = performance.now();
@@ -110,6 +120,10 @@ export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
       listeners.add(callback);
       return () => listeners.delete(callback);
     },
+    onAudioError(callback: (message: string) => void) {
+      audioErrorListeners.add(callback);
+      return () => audioErrorListeners.delete(callback);
+    },
     getAudioError() {
       return audioError;
     },
@@ -117,6 +131,7 @@ export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
       this.stop();
       void audioContext?.close();
       listeners.clear();
+      audioErrorListeners.clear();
     }
   };
 }

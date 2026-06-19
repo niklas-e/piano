@@ -329,8 +329,10 @@ function MetronomeControls(props: { variant: "full" | "compact" }) {
 
   onMount(() => {
     const unsubscribe = engine.onPulse((beat) => setPulseCount(beat));
+    const unsubscribeAudioError = engine.onAudioError(setAudioError);
     onCleanup(() => {
       unsubscribe();
+      unsubscribeAudioError();
       engine.dispose();
     });
   });

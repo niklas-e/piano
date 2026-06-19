@@ -11,7 +11,7 @@ test("full metronome starts, stops, adjusts BPM, and persists tempo", async ({ p
 
   await page.getByRole("button", { name: "Start metronome" }).click();
   await expect(page.getByRole("button", { name: "Stop metronome" })).toBeVisible();
-  await expect(page.getByText("Visual pulse")).toBeVisible();
+  await expect(page.getByText("Visual pulse", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Stop metronome" }).click();
   await expect(page.getByRole("button", { name: "Start metronome" })).toBeVisible();
@@ -30,4 +30,46 @@ test("compact metronome works from exercise pages", async ({ page }) => {
   await page.getByRole("button", { name: "Start compact metronome" }).click();
   await expect(page.getByRole("button", { name: "Stop compact metronome" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Open full metronome" })).toHaveAttribute("href", "/metronome");
+});
+
+test("metronome shows audio-unavailable message when Web Audio resume fails asynchronously", async ({ page }) => {
+  await page.addInitScript(() => {
+    class RejectingAudioContext {
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        return {
+          connect() {},
+          frequency: { value: 0 },
+          start() {},
+          stop() {}
+        };
+      }
+      createGain() {
+        return {
+          connect() {},
+          gain: {
+            exponentialRampToValueAtTime() {},
+            setValueAtTime() {}
+          }
+        };
+      }
+      resume() {
+        return Promise.reject(new Error("resume blocked"));
+      }
+      close() {
+        return Promise.resolve();
+      }
+    }
+
+    window.AudioContext = RejectingAudioContext as unknown as typeof AudioContext;
+    window.webkitAudioContext = undefined;
+  });
+
+  await page.goto("/metronome");
+  await page.getByRole("button", { name: "Start metronome" }).click();
+
+  await expect(page.getByRole("button", { name: "Stop metronome" })).toBeVisible();
+  await expect(page.getByText("Visual pulse", { exact: true })).toBeVisible();
+  await expect(page.getByText("Audio click unavailable. Visual pulse is still active.")).toBeVisible();
 });
