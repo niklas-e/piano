@@ -1,10 +1,13 @@
 import { For, Match, Show, Switch, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import { exercises, getExerciseById, type Exercise, type Hand } from "./exercises";
 import { buildKeyboard, isHighlightedKey } from "./keyboard";
+import { clampBpm, createMetronomeEngine } from "./metronome";
 import {
+  readBpmPreference,
   readExerciseTypeFilterPreference,
   readHandPreference,
   readLastExerciseIdPreference,
+  writeBpmPreference,
   writeExerciseTypeFilterPreference,
   writeHandPreference,
   writeLastExerciseIdPreference,
@@ -269,7 +272,7 @@ function ExerciseDetail(props: { exercise: Exercise }) {
 
       <section class="compact-metronome" aria-labelledby="compact-metronome-heading">
         <h2 id="compact-metronome-heading">Compact metronome</h2>
-        <p>Metronome controls will appear here.</p>
+        <MetronomeControls variant="compact" />
       </section>
     </section>
   );
@@ -287,10 +290,95 @@ function ExerciseNotFoundPage() {
 
 function MetronomePage() {
   return (
-    <section aria-labelledby="metronome-heading">
-      <h1 id="metronome-heading">Metronome</h1>
-      <p>Tempo controls will appear here.</p>
+    <section aria-labelledby="metronome-heading" class="stack metronome-view">
+      <div class="section-intro">
+        <p class="eyebrow">Steady tempo</p>
+        <h1 id="metronome-heading">Metronome</h1>
+        <p>Set a practical tempo, start the pulse, and keep the exercise work focused.</p>
+      </div>
+      <MetronomeControls variant="full" />
     </section>
+  );
+}
+
+function MetronomeControls(props: { variant: "full" | "compact" }) {
+  const [bpm, setBpm] = createSignal(readBpmPreference());
+  const [isRunning, setIsRunning] = createSignal(false);
+  const [pulseCount, setPulseCount] = createSignal(0);
+  const [audioError, setAudioError] = createSignal<string | undefined>();
+  const engine = createMetronomeEngine(bpm());
+
+  const updateBpm = (value: number) => {
+    const nextBpm = clampBpm(value);
+    setBpm(nextBpm);
+    engine.setBpm(nextBpm);
+    writeBpmPreference(nextBpm);
+  };
+
+  const toggle = () => {
+    if (isRunning()) {
+      engine.stop();
+      setIsRunning(false);
+      return;
+    }
+
+    engine.start();
+    setAudioError(engine.getAudioError());
+    setIsRunning(true);
+  };
+
+  onMount(() => {
+    const unsubscribe = engine.onPulse((beat) => setPulseCount(beat));
+    onCleanup(() => {
+      unsubscribe();
+      engine.dispose();
+    });
+  });
+
+  const isCompact = () => props.variant === "compact";
+  const startLabel = () => (isCompact() ? "Start compact metronome" : "Start metronome");
+  const stopLabel = () => (isCompact() ? "Stop compact metronome" : "Stop metronome");
+
+  return (
+    <div class={`metronome-card ${isCompact() ? "compact" : "full"}`}>
+      <div class="tempo-row">
+        <button type="button" onClick={() => updateBpm(bpm() - 5)} aria-label={isCompact() ? "Compact -5 BPM" : "-5 BPM"}>
+          -5
+        </button>
+        <label class="tempo-input">
+          <span>Tempo in BPM</span>
+          <input
+            inputmode="numeric"
+            min="30"
+            max="240"
+            type="number"
+            value={bpm()}
+            onChange={(event) => updateBpm(Number(event.currentTarget.value))}
+          />
+        </label>
+        <button type="button" onClick={() => updateBpm(bpm() + 5)} aria-label={isCompact() ? "Compact +5 BPM" : "+5 BPM"}>
+          +5
+        </button>
+      </div>
+
+      <div class={`pulse ${isRunning() ? "is-running" : ""}`} aria-live="polite">
+        <span>{bpm()} BPM</span>
+        <strong>Visual pulse</strong>
+        <small>Beat {pulseCount()}</small>
+      </div>
+
+      <div class="metronome-actions">
+        <button type="button" class="primary-button" onClick={toggle} aria-label={isRunning() ? stopLabel() : startLabel()}>
+          {isRunning() ? "Stop" : "Start"}
+        </button>
+        <Show when={audioError()}>
+          {(message) => <p class="audio-message">{message()}</p>}
+        </Show>
+        <Show when={isCompact()}>
+          <a href="/metronome">Open full metronome</a>
+        </Show>
+      </div>
+    </div>
   );
 }
 
