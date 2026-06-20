@@ -201,6 +201,7 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
       }
     }
 
+    /* identical-by-design: alternating animation-names force a per-beat restart of the glow */
     @keyframes pulse-glow {
       0% {
         box-shadow: 0 0 0 0.55rem rgba(212, 106, 44, 0.45);
@@ -328,10 +329,9 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
             class={`pulse ${isRunning() ? "is-running" : ""}${isRunning() ? pulseClass() : ""}`}
             style={{ "--pulse-duration": `${pulseAnimationDuration()}ms` }}
             data-beat={pulseCount()}
-            aria-live="polite"
           >
             <strong class="bpm-value">{bpm()}</strong>
-            <small class="elapsed">{formatElapsed(elapsedMs())}</small>
+            <small class="elapsed" aria-hidden="true">{formatElapsed(elapsedMs())}</small>
           </div>
 
           <div class="tempo-bar">

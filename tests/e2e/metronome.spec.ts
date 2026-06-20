@@ -29,7 +29,9 @@ test("full metronome tap tempo sets BPM and elapsed time resets on start", async
     await page.getByRole("button", { name: "Tap tempo" }).click();
     await page.waitForTimeout(400);
   }
-  await expect(page.getByLabel("Tempo in BPM")).not.toHaveValue("80");
+  const tappedBpm = Number(await page.getByLabel("Tempo in BPM").inputValue());
+  expect(tappedBpm).toBeGreaterThanOrEqual(100);
+  expect(tappedBpm).toBeLessThanOrEqual(200);
 
   await page.getByRole("button", { name: "Start metronome" }).click();
   await expect(page.locator(".pulse .elapsed")).toBeVisible();
