@@ -21,12 +21,14 @@ const twoOctaveFingering = {
 } as const satisfies Record<Exercise["type"], Record<Hand, readonly Finger[]>>;
 
 export function derivePracticeRange(exercise: Exercise, hand: Hand, range: PracticeRange): DerivedPractice {
+  const baseOctave = hand === "left" ? 3 : 4;
+
   if (range === 1) {
     return {
       label: "1 octave",
       notes: exercise.notes,
       fingering: exercise.fingering[hand],
-      keyIds: deriveKeyIds(exercise.notes)
+      keyIds: deriveKeyIds(exercise.notes, baseOctave)
     };
   }
 
@@ -36,7 +38,7 @@ export function derivePracticeRange(exercise: Exercise, hand: Hand, range: Pract
     label: "2 octaves",
     notes,
     fingering: twoOctaveFingering[exercise.type][hand],
-    keyIds: deriveKeyIds(notes)
+    keyIds: deriveKeyIds(notes, baseOctave)
   };
 }
 
@@ -45,8 +47,8 @@ function expandSequence<T>(sequence: readonly T[]): readonly T[] {
   return [...sequence, ...tail];
 }
 
-function deriveKeyIds(notes: readonly NoteName[]): readonly string[] {
-  let octave = 4;
+function deriveKeyIds(notes: readonly NoteName[], baseOctave: number): readonly string[] {
+  let octave = baseOctave;
   let previousNoteIndex = -1;
 
   return notes.map((note) => {

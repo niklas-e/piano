@@ -36,5 +36,13 @@ test("derivePracticeRange uses explicit two-octave arpeggio fingering for both h
   assert.deepEqual(rightHand.keyIds, ["A4", "C5", "E5", "A5", "C6", "E6", "A6"]);
   assert.deepEqual(leftHand.notes, ["A", "C", "E", "A", "C", "E", "A"]);
   assert.deepEqual(leftHand.fingering, [5, 3, 2, 1, 3, 2, 1]);
-  assert.deepEqual(leftHand.keyIds, ["A4", "C5", "E5", "A5", "C6", "E6", "A6"]);
+  assert.deepEqual(leftHand.keyIds, ["A3", "C4", "E4", "A4", "C5", "E5", "A5"]);
+});
+
+test("derivePracticeRange anchors the left hand one octave below the right hand", () => {
+  assert.ok(cMajor);
+  const leftHand = derivePracticeRange(cMajor, "left", 1);
+
+  assert.deepEqual(leftHand.keyIds, ["C3", "D3", "E3", "F3", "G3", "A3", "B3", "C4"]);
+  assert.deepEqual(leftHand.fingering, [5, 4, 3, 2, 1, 3, 2, 1]);
 });

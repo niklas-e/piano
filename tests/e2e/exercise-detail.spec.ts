@@ -55,7 +55,7 @@ test("hand selection updates visible fingering and persists", async ({ page }) =
   })).toBe(true);
 
   await leftHandRadio.check();
-  await expect(page.getByTestId("key-C4")).toContainText("5");
+  await expect(page.getByTestId("key-C3")).toContainText("5");
   await page.reload();
   await expect(page.getByRole("radio", { name: "Left hand" })).toBeChecked();
 });
