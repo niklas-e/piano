@@ -1,36 +1,47 @@
-import { createMemo } from "solid-js";
+import { createEffect, onCleanup } from "solid-js";
+import { clearHighlightRanges, setHighlightRanges, supportsHighlightApi } from "./searchHighlight";
 
+/**
+ * Renders `text` and, when it contains the current `query`, highlights the
+ * matching ranges using the CSS Custom Highlight API. No DOM mutation and no
+ * wrapper `<mark>` elements are involved; matches are painted via
+ * `::highlight(search-match)`. Falls back to plain text where the API is
+ * unavailable.
+ */
 export function HighlightedText(props: { text: string; query: string }) {
-  const normalizedQuery = () => props.query.trim().toLowerCase();
-  const segments = createMemo(() => {
-    const query = normalizedQuery();
+  let container: HTMLSpanElement | undefined;
+  const token = Symbol("search-highlight");
 
-    if (query.length === 0) {
-      return [props.text];
+  createEffect(() => {
+    const query = props.query.trim().toLowerCase();
+    const text = props.text;
+
+    if (!supportsHighlightApi || !container) {
+      return;
     }
 
-    const text = props.text;
-    const lowerText = text.toLowerCase();
-    const parts = [];
-    let currentIndex = 0;
-    let matchIndex = lowerText.indexOf(query, currentIndex);
+    const textNode = container.firstChild;
+    if (query.length === 0 || !textNode || textNode.nodeType !== Node.TEXT_NODE) {
+      clearHighlightRanges(token);
+      return;
+    }
+
+    const haystack = text.toLowerCase();
+    const ranges: Range[] = [];
+    let matchIndex = haystack.indexOf(query);
 
     while (matchIndex >= 0) {
-      if (matchIndex > currentIndex) {
-        parts.push(text.slice(currentIndex, matchIndex));
-      }
-
-      parts.push(<mark class="search-match">{text.slice(matchIndex, matchIndex + query.length)}</mark>);
-      currentIndex = matchIndex + query.length;
-      matchIndex = lowerText.indexOf(query, currentIndex);
+      const range = new Range();
+      range.setStart(textNode, matchIndex);
+      range.setEnd(textNode, matchIndex + query.length);
+      ranges.push(range);
+      matchIndex = haystack.indexOf(query, matchIndex + query.length);
     }
 
-    if (currentIndex < text.length) {
-      parts.push(text.slice(currentIndex));
-    }
-
-    return parts;
+    setHighlightRanges(token, ranges);
   });
 
-  return <>{segments()}</>;
+  onCleanup(() => clearHighlightRanges(token));
+
+  return <span ref={container}>{props.text}</span>;
 }

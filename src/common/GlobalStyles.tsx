@@ -73,11 +73,9 @@ export function GlobalStyles() {
         text-decoration: none;
       }
 
-      .search-match {
-        background: #f3c05f;
-        border-radius: 0.2rem;
-        color: inherit;
-        padding: 0 0.08em;
+      ::highlight(search-match) {
+        background-color: #f3c05f;
+        color: #17130f;
       }
     }
   `;

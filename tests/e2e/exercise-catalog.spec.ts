@@ -27,10 +27,14 @@ test("catalog ranks title matches before content matches and highlights search t
   await page.getByLabel("Search exercises").fill("minor");
   const resultLinks = page.locator(".exercise-card h2 a");
   await expect(resultLinks.first()).toHaveText(/minor/);
-  await expect(page.locator("mark.search-match").first()).toHaveText(/minor/i);
+  await expect
+    .poll(() => page.evaluate(() => CSS.highlights.get("search-match")?.size ?? 0))
+    .toBeGreaterThan(0);
 
   await page.getByLabel("Search exercises").fill("F#");
-  await expect(page.locator("mark.search-match").first()).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => CSS.highlights.get("search-match")?.size ?? 0))
+    .toBeGreaterThan(0);
 });
 
 test("catalog type filter persists", async ({ page }) => {
