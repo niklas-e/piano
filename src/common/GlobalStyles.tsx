@@ -17,12 +17,16 @@ export function GlobalStyles() {
         text-rendering: optimizeLegibility;
       }
 
-      * {
+      *,
+      *::before,
+      *::after {
         box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        border: 0;
       }
 
       body {
-        margin: 0;
         min-width: 320px;
       }
 
@@ -30,10 +34,25 @@ export function GlobalStyles() {
         color: inherit;
       }
 
+      img,
+      picture,
+      svg,
+      canvas {
+        display: block;
+        max-width: 100%;
+      }
+
       button,
       input,
-      select {
+      select,
+      textarea {
+        color: inherit;
         font: inherit;
+      }
+
+      button {
+        appearance: none;
+        background: none;
       }
 
       :focus-visible {
