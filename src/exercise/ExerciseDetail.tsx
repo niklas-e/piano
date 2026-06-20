@@ -222,7 +222,7 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
 
       <section class="practice-panel" aria-labelledby="notes-heading">
         <h2 id="notes-heading">Notes</h2>
-        <p class="sequence">{practice().notes.join(" - ")}</p>
+        <p class="sequence">{props.exercise.notes.join(" - ")}</p>
       </section>
 
       <Keyboard keys={keyboardKeys} keyIds={practice().keyIds} fingering={practice().fingering} />

@@ -24,7 +24,7 @@ test("scale detail renders notes, fingering, keyboard, and persists last opened 
 
   await page.getByRole("button", { name: "Increase range" }).click();
   await expect(page.getByText("2 octaves", { exact: true })).toBeVisible();
-  await expect(page.getByText("C - D - E - F - G - A - B - C - D - E - F - G - A - B - C")).toBeVisible();
+  await expect(page.locator(".practice-panel .sequence")).toHaveText("C - D - E - F - G - A - B - C");
   await expect(page.getByTestId("key-C6")).toHaveAttribute("aria-label", "C6 highlighted");
   await expect(page.locator(".metronome-card.compact")).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem("piano:last-exercise-id"))).toBe("c-major-scale");
