@@ -5,7 +5,9 @@ export const iconModuleLoaders = {
   "hourglass-low": () => import("@phosphor-icons/webcomponents/PhHourglassLow"),
   "list": () => import("@phosphor-icons/webcomponents/PhList"),
   "magnifying-glass": () => import("@phosphor-icons/webcomponents/PhMagnifyingGlass"),
-  "x": () => import("@phosphor-icons/webcomponents/PhX")
+  "x": () => import("@phosphor-icons/webcomponents/PhX"),
+  "plus": () => import("@phosphor-icons/webcomponents/PhPlus"),
+  "minus": () => import("@phosphor-icons/webcomponents/PhMinus"),
 } satisfies Record<string, IconModuleLoader>;
 
 export type IconName = keyof typeof iconModuleLoaders;

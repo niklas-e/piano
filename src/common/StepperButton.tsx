@@ -1,5 +1,6 @@
 import type { JSX } from "solid-js";
 import { css } from "solid-styled";
+import { PhIcon } from "./PhIcon";
 
 export function StepperButton(props: {
   direction: "increment" | "decrement";
@@ -56,41 +57,10 @@ export function StepperButton(props: {
       cursor: not-allowed;
       opacity: 0.42;
     }
-
-    .stepper-button-glyph {
-      display: block;
-      height: 0.9rem;
-      position: relative;
-      width: 0.9rem;
-    }
-
-    .stepper-button-glyph::before,
-    .stepper-button-glyph::after {
-      background: currentColor;
-      border-radius: 999px;
-      content: "";
-      left: 50%;
-      position: absolute;
-      top: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    .stepper-button-glyph::before {
-      height: 0.14rem;
-      width: 100%;
-    }
-
-    .stepper-button-glyph::after {
-      height: 100%;
-      width: 0.14rem;
-    }
-
-    .stepper-button-glyph.is-minus::after {
-      display: none;
-    }
   `;
 
   const variant = props.variant ?? "round";
+  const iconSize = variant === "round" ? 18 : 14;
 
   return (
     <button
@@ -101,7 +71,13 @@ export function StepperButton(props: {
       onClick={props.onClick}
     >
       {props.children ?? (
-        <span aria-hidden="true" class={props.direction === "decrement" ? "stepper-button-glyph is-minus" : "stepper-button-glyph"} />
+        <PhIcon
+          name={props.direction === "decrement" ? "minus" : "plus"}
+          aria-hidden="true"
+          size={iconSize}
+          color="currentColor"
+          weight="bold"
+        />
       )}
     </button>
   );
