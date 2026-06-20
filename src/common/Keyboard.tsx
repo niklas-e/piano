@@ -1,4 +1,4 @@
-import { For, Show } from "solid-js";
+import { For, Show, createEffect } from "solid-js";
 import { css } from "solid-styled";
 import { isHighlightedKey, type PianoKey } from "./keyboard";
 import type { Finger } from "./exercises";
@@ -7,6 +7,7 @@ export function Keyboard(props: {
   keys: readonly PianoKey[];
   keyIds: readonly string[];
   fingering: readonly Finger[];
+  scrollKey?: string;
 }) {
   css`
     .keyboard-scroll {
@@ -16,7 +17,7 @@ export function Keyboard(props: {
 
     .keyboard {
       height: 11rem;
-      min-width: 980px;
+      min-width: 148rem;
       position: relative;
     }
 
@@ -47,6 +48,10 @@ export function Keyboard(props: {
       height: 10.5rem;
       width: 2.8rem;
       z-index: 1;
+    }
+
+    .piano-key.is-highlighted {
+      scroll-margin-left: 5.6rem;
     }
 
     .piano-key.white.is-highlighted {
@@ -93,6 +98,31 @@ export function Keyboard(props: {
     }
   `;
 
+  let scrollContainer: HTMLDivElement | undefined;
+  let hasScrolled = false;
+
+  createEffect(() => {
+    // Re-run when exercise or hand changes (encoded in scrollKey),
+    // intentionally NOT depending on keyIds so range changes do not re-scroll.
+    void props.scrollKey;
+
+    if (!scrollContainer) {
+      return;
+    }
+
+    const target = scrollContainer.querySelector<HTMLElement>(".piano-key.is-highlighted");
+    if (!target) {
+      return;
+    }
+
+    target.scrollIntoView({
+      inline: "start",
+      block: "nearest",
+      behavior: hasScrolled ? "smooth" : "auto"
+    });
+    hasScrolled = true;
+  });
+
   const whiteIndexForKey = (keyIndex: number) => {
     const whiteKeysBefore = props.keys.slice(0, keyIndex).filter((key) => key.type === "white").length;
 
@@ -100,7 +130,7 @@ export function Keyboard(props: {
   };
 
   return (
-    <div class="keyboard-scroll" role="group" aria-label="Practice keyboard">
+    <div class="keyboard-scroll" role="group" aria-label="Practice keyboard" ref={scrollContainer}>
       <div class="keyboard">
         <For each={props.keys}>
           {(key, index) => {

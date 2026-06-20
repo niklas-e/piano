@@ -30,6 +30,24 @@ test("scale detail renders notes, fingering, keyboard, and persists last opened 
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem("piano:last-exercise-id"))).toBe("c-major-scale");
 });
 
+test("keyboard renders the full 88-key range and auto-scrolls the exercise into view", async ({ page }) => {
+  await page.goto("/exercises/c-major-scale");
+
+  // Full 88-key board: lowest and highest keys exist.
+  await expect(page.getByTestId("key-A0")).toBeAttached();
+  await expect(page.getByTestId("key-C8")).toBeAttached();
+  await expect(page.getByTestId("key-A0").locator(".key-label")).toHaveText("A");
+
+  // Right-hand C major starts on C4, which is far right on an 88-key board,
+  // so the scroll container must auto-scroll to the right to reveal it.
+  await expect
+    .poll(() => page.locator(".keyboard-scroll").evaluate((el) => el.scrollLeft))
+    .toBeGreaterThan(100);
+
+  // The first highlighted key is brought into the visible viewport.
+  await expect(page.getByTestId("key-C4")).toBeInViewport();
+});
+
 test("highlighted black keys hide note labels and show fingering", async ({ page }) => {
   await page.goto("/exercises/g-major-scale");
 

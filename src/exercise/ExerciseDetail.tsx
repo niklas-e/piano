@@ -1,7 +1,7 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
 import { css } from "solid-styled";
 import { type Exercise, type Hand } from "../common/exercises";
-import { buildKeyboard } from "../common/keyboard";
+import { buildPianoKeyboard } from "../common/keyboard";
 import { derivePracticeRange, type PracticeRange } from "../common/practiceRange";
 import { readHandPreference, writeHandPreference, writeLastExerciseIdPreference } from "../common/preferences";
 import { Keyboard } from "../common/Keyboard";
@@ -150,7 +150,7 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
 
   const [hand, setHand] = createSignal<Hand>(readHandPreference());
   const [range, setRange] = createSignal<PracticeRange>(1);
-  const keyboardKeys = buildKeyboard(3, 6);
+  const keyboardKeys = buildPianoKeyboard();
   const practice = createMemo(() => derivePracticeRange(props.exercise, hand(), range()));
 
   createEffect(() => {
@@ -220,7 +220,12 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
         <p class="sequence">{props.exercise.notes.join(" - ")}</p>
       </section>
 
-      <Keyboard keys={keyboardKeys} keyIds={practice().keyIds} fingering={practice().fingering} />
+      <Keyboard
+        keys={keyboardKeys}
+        keyIds={practice().keyIds}
+        fingering={practice().fingering}
+        scrollKey={`${props.exercise.id}:${hand()}`}
+      />
 
       <MetronomeControls variant="compact" />
     </section>
