@@ -88,9 +88,7 @@ export function ExercisesPage() {
   return (
     <section aria-labelledby="exercises-heading" class="stack">
       <div class="section-intro">
-        <p class="eyebrow">Plain technical reference</p>
         <h1 id="exercises-heading">Exercises</h1>
-        <p>Search scales and arpeggios directly. No grades, levels, dashboards, or exam labels.</p>
       </div>
 
       <Show when={lastExercise()}>
@@ -103,7 +101,6 @@ export function ExercisesPage() {
 
       <div class="catalog-controls">
         <label>
-          <span>Search exercises</span>
           <input
             value={search()}
             onInput={(event) => setSearch(event.currentTarget.value)}
@@ -112,7 +109,6 @@ export function ExercisesPage() {
           />
         </label>
         <label>
-          <span>Exercise type</span>
           <select value={typeFilter()} onChange={(event) => updateTypeFilter(event.currentTarget.value)}>
             <option value="all">All exercises</option>
             <option value="scale">Scales</option>

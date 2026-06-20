@@ -170,13 +170,8 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
   return (
     <section aria-labelledby="exercise-heading" class="stack">
       <div class="exercise-header">
-        <p class="eyebrow">{props.exercise.type === "scale" ? "Scale" : "Arpeggio"}</p>
         <h1 id="exercise-heading">{props.exercise.title}</h1>
         <p>{props.exercise.description}</p>
-        <div class="detail-chips" aria-label="Exercise details">
-          <span>{props.exercise.tonic}</span>
-          <span>{props.exercise.quality}</span>
-        </div>
       </div>
 
       <div class="practice-controls">

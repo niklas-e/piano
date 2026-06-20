@@ -16,11 +16,14 @@ export function ExerciseCard(props: { exercise: Exercise; query: string }) {
       font-size: 1.4rem;
       letter-spacing: -0.04em;
       margin: 0.6rem 0;
+
+      &:hover {
+        text-decoration: underline;
+      }
     }
 
-    .exercise-card h2 a {
-      text-decoration-thickness: 0.08em;
-      text-underline-offset: 0.18em;
+    .exercise-card a {
+      text-decoration: none;
     }
 
     .card-meta {
@@ -41,7 +44,8 @@ export function ExerciseCard(props: { exercise: Exercise; query: string }) {
   const typeLabel = () => (props.exercise.type === "scale" ? "Scale" : "Arpeggio");
 
   return (
-    <article class="exercise-card">
+    <article class="exercise-card" >
+        <a href={`/exercises/${props.exercise.id}`}>
       <div class="card-meta">
         <span>
           <HighlightedText text={typeLabel()} query={props.query} />
@@ -54,13 +58,12 @@ export function ExerciseCard(props: { exercise: Exercise; query: string }) {
         </span>
       </div>
       <h2>
-        <a href={`/exercises/${props.exercise.id}`}>
           <HighlightedText text={props.exercise.title} query={props.query} />
-        </a>
       </h2>
       <p>
         <HighlightedText text={props.exercise.notes.join(" - ")} query={props.query} />
       </p>
+        </a>
     </article>
   );
 }
