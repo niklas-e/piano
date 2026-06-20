@@ -1,6 +1,6 @@
 import { Show, createSignal, onCleanup, onMount } from "solid-js";
 import { css } from "solid-styled";
-import { clampBpm, createMetronomeEngine, msPerBeat } from "./metronome";
+import { clampBpm, createMetronomeEngine, formatElapsed, msPerBeat, tapTempoBpm, TAP_RESET_GAP_MS } from "./metronome";
 import { readBpmPreference, writeBpmPreference } from "./preferences";
 
 export function MetronomeControls(props: { variant: "full" | "compact" }) {
@@ -35,32 +35,25 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
       line-height: 1;
     }
 
-    .pulse .bpm-unit {
-      font-size: 0.78rem;
-      font-weight: 800;
-      letter-spacing: 0.22em;
-      opacity: 0.75;
-      text-transform: uppercase;
-    }
-
     .pulse small {
       color: #d8c7b3;
+      font-feature-settings: "tnum" 1;
       font-size: 0.82rem;
       font-weight: 700;
       margin-top: 0.4rem;
     }
 
     .pulse.is-running.pulse-odd {
-      animation: pulse-pop var(--pulse-duration) ease-out 1;
+      animation: pulse-glow var(--pulse-duration) ease-out 1;
     }
 
     .pulse.is-running.pulse-even {
-      animation: pulse-pop-alt var(--pulse-duration) ease-out 1;
+      animation: pulse-glow-alt var(--pulse-duration) ease-out 1;
     }
 
     /* ---- Full variant: unified tempo bar [-5][-][N][+][+5] ---- */
     .tempo-bar {
-      align-items: end;
+      align-items: center;
       display: grid;
       gap: 0.5rem;
       grid-template-columns: auto auto minmax(4rem, 1fr) auto auto;
@@ -78,13 +71,7 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
       padding: 0.65rem 1rem;
     }
 
-    .tempo-input {
-      display: grid;
-      font-weight: 800;
-      gap: 0.35rem;
-    }
-
-    .tempo-input input {
+    .tempo-field {
       background: #f7f0e6;
       border: 1px solid #8e7b67;
       border-radius: 0.9rem;
@@ -92,6 +79,21 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
       font-weight: 900;
       padding: 0.7rem;
       text-align: center;
+    }
+
+    .tap-button {
+      background: transparent;
+      border: 1px solid #2f251d;
+      border-radius: 999px;
+      color: #2f251d;
+      cursor: pointer;
+      font-weight: 900;
+      min-height: 2.75rem;
+      padding: 0.65rem 1.1rem;
+    }
+
+    .tap-button:hover {
+      background: #f1e7d8;
     }
 
     .metronome-actions {
@@ -205,6 +207,24 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
       }
     }
 
+    @keyframes pulse-glow {
+      0% {
+        box-shadow: 0 0 0 0.55rem rgba(212, 106, 44, 0.45);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(212, 106, 44, 0);
+      }
+    }
+
+    @keyframes pulse-glow-alt {
+      0% {
+        box-shadow: 0 0 0 0.55rem rgba(212, 106, 44, 0.45);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(212, 106, 44, 0);
+      }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .pulse.is-running.pulse-odd,
       .pulse.is-running.pulse-even,
@@ -232,6 +252,42 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
   const [audioError, setAudioError] = createSignal<string | undefined>();
   const engine = createMetronomeEngine(bpm());
 
+  const [elapsedMs, setElapsedMs] = createSignal(0);
+  let tapTimes: number[] = [];
+  let elapsedTimerId: number | undefined;
+  let elapsedStartedAt = 0;
+
+  const stopElapsedTimer = () => {
+    if (elapsedTimerId !== undefined) {
+      window.clearInterval(elapsedTimerId);
+      elapsedTimerId = undefined;
+    }
+  };
+
+  const startElapsedTimer = () => {
+    stopElapsedTimer();
+    elapsedStartedAt = performance.now();
+    setElapsedMs(0);
+    elapsedTimerId = window.setInterval(() => {
+      setElapsedMs(performance.now() - elapsedStartedAt);
+    }, 250);
+  };
+
+  const handleTap = () => {
+    const now = performance.now();
+    if (tapTimes.length > 0 && now - tapTimes[tapTimes.length - 1] > TAP_RESET_GAP_MS) {
+      tapTimes = [];
+    }
+    tapTimes.push(now);
+    if (tapTimes.length > 5) {
+      tapTimes = tapTimes.slice(-5);
+    }
+    const nextBpm = tapTempoBpm(tapTimes);
+    if (nextBpm !== null) {
+      updateBpm(nextBpm);
+    }
+  };
+
   const updateBpm = (value: number) => {
     const nextBpm = clampBpm(value);
     setBpm(nextBpm);
@@ -243,18 +299,22 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
     if (isRunning()) {
       engine.stop();
       setIsRunning(false);
+      stopElapsedTimer();
+      setElapsedMs(0);
       return;
     }
 
     engine.start();
     setAudioError(engine.getAudioError());
     setIsRunning(true);
+    startElapsedTimer();
   };
 
   onMount(() => {
     const unsubscribe = engine.onPulse((beat) => setPulseCount(beat));
     const unsubscribeAudioError = engine.onAudioError(setAudioError);
     onCleanup(() => {
+      stopElapsedTimer();
       unsubscribe();
       unsubscribeAudioError();
       engine.dispose();
@@ -273,11 +333,11 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
           <div
             class={`pulse ${isRunning() ? "is-running" : ""}${isRunning() ? pulseClass() : ""}`}
             style={{ "--pulse-duration": `${pulseAnimationDuration()}ms` }}
+            data-beat={pulseCount()}
             aria-live="polite"
           >
             <strong class="bpm-value">{bpm()}</strong>
-            <span class="bpm-unit">BPM</span>
-            <small>Beat {pulseCount()}</small>
+            <small class="elapsed">{formatElapsed(elapsedMs())}</small>
           </div>
 
           <div class="tempo-bar">
@@ -287,17 +347,16 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
             <button type="button" onClick={() => updateBpm(bpm() - 1)} aria-label="-1 BPM">
               -
             </button>
-            <label class="tempo-input">
-              <span>Tempo in BPM</span>
-              <input
-                inputmode="numeric"
-                min="30"
-                max="240"
-                type="number"
-                value={bpm()}
-                onChange={(event) => updateBpm(Number(event.currentTarget.value))}
-              />
-            </label>
+            <input
+              class="tempo-field"
+              aria-label="Tempo in BPM"
+              inputmode="numeric"
+              min="30"
+              max="240"
+              type="number"
+              value={bpm()}
+              onChange={(event) => updateBpm(Number(event.currentTarget.value))}
+            />
             <button type="button" onClick={() => updateBpm(bpm() + 1)} aria-label="+1 BPM">
               +
             </button>
@@ -314,6 +373,9 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
               aria-label={isRunning() ? "Stop metronome" : "Start metronome"}
             >
               {isRunning() ? "Stop metronome" : "Start metronome"}
+            </button>
+            <button type="button" class="tap-button" onClick={handleTap} aria-label="Tap tempo">
+              Tap
             </button>
             <Show when={audioError()}>{(message) => <p class="audio-message">{message()}</p>}</Show>
           </div>
