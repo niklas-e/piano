@@ -26,8 +26,8 @@ export function StepperButton(props: {
 
     .stepper-button.round {
       border-radius: 50%;
-      height: 2rem;
-      width: 2rem;
+      height: 2.4rem;
+      width: 2.4rem;
     }
 
     .stepper-button.pill {
