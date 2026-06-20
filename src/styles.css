@@ -269,6 +269,11 @@ section h1 {
   position: absolute;
 }
 
+.segmented-options label:has(input:focus-visible) {
+  outline: 3px solid #7b4b22;
+  outline-offset: 3px;
+}
+
 .segmented-options label:has(input:checked) {
   background: #2f251d;
   color: #fffaf2;

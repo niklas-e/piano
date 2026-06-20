@@ -33,7 +33,15 @@ test("hand selection updates visible fingering and persists", async ({ page }) =
   const introBox = await page.locator(".exercise-header").boundingBox();
   expect(introBox?.height ?? 999).toBeLessThan(180);
 
-  await page.getByRole("radio", { name: "Left hand" }).check();
+  const leftHandRadio = page.getByRole("radio", { name: "Left hand" });
+  const leftHandLabel = page.locator(".segmented-options label", { has: leftHandRadio });
+  await leftHandRadio.focus();
+  await expect.poll(async () => leftHandLabel.evaluate((label) => {
+    const styles = window.getComputedStyle(label);
+    return styles.outlineStyle !== "none" || styles.boxShadow !== "none";
+  })).toBe(true);
+
+  await leftHandRadio.check();
   await expect(page.getByText("5 - 4 - 3 - 2 - 1 - 3 - 2 - 1")).toBeVisible();
   await page.reload();
   await expect(page.getByRole("radio", { name: "Left hand" })).toBeChecked();
