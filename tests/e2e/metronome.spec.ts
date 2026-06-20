@@ -11,7 +11,7 @@ test("full metronome starts, stops, adjusts BPM, and persists tempo", async ({ p
 
   await page.getByRole("button", { name: "Start metronome" }).click();
   await expect(page.getByRole("button", { name: "Stop metronome" })).toHaveText("Stop metronome");
-  await expect(page.getByText("Visual pulse", { exact: true })).toBeVisible();
+  await expect(page.locator(".pulse .bpm-unit")).toBeVisible();
 
   await page.getByRole("button", { name: "Stop metronome" }).click();
   await expect(page.getByRole("button", { name: "Start metronome" })).toHaveText("Start metronome");
@@ -96,7 +96,7 @@ test("metronome shows audio-unavailable message when Web Audio resume fails asyn
   await page.getByRole("button", { name: "Start metronome" }).click();
 
   await expect(page.getByRole("button", { name: "Stop metronome" })).toBeVisible();
-  await expect(page.getByText("Visual pulse", { exact: true })).toBeVisible();
+  await expect(page.locator(".pulse")).toBeVisible();
   await expect(page.getByText("Audio click unavailable. Visual pulse is still active.")).toBeVisible();
   await expect
     .poll(async () => {
@@ -133,7 +133,7 @@ test("metronome keeps visual pulse running when Web Audio graph creation fails",
   await page.getByRole("button", { name: "Start metronome" }).click();
 
   await expect(page.getByRole("button", { name: "Stop metronome" })).toBeVisible();
-  await expect(page.getByText("Visual pulse", { exact: true })).toBeVisible();
+  await expect(page.locator(".pulse")).toBeVisible();
   await expect(page.getByText("Audio click unavailable. Visual pulse is still active.")).toBeVisible();
 });
 
