@@ -48,6 +48,7 @@ export function GlobalStyles() {
       textarea {
         color: inherit;
         font: inherit;
+        padding: 0.75rem 0.85rem;
       }
 
       button {

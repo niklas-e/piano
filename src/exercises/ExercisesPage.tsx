@@ -57,7 +57,6 @@ export function ExercisesPage() {
       border: none;
       color: inherit;
       flex: 1;
-      padding: 0.75rem 0.85rem;
       padding-left: 0.55rem;
     }
 
