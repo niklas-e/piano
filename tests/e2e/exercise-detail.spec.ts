@@ -5,7 +5,6 @@ test("scale detail renders notes, fingering, keyboard, and persists last opened 
 
   await expect(page.getByRole("heading", { name: "C major scale" })).toBeVisible();
   await expect(page.getByText("C - D - E - F - G - A - B - C")).toBeVisible();
-  await expect(page.locator(".detail-chips")).not.toContainText(/one octave/i);
   await expect(page.getByRole("group", { name: "Practice keyboard" })).toBeVisible();
   await expect(page.getByTestId("key-C4")).toContainText("C");
   await expect(page.getByTestId("key-C4")).toContainText("1");

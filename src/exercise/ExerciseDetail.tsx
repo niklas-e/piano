@@ -21,20 +21,6 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
       margin: 0;
     }
 
-    .detail-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.45rem;
-    }
-
-    .detail-chips span {
-      background: #efe1cf;
-      border-radius: 999px;
-      font-size: 0.78rem;
-      font-weight: 800;
-      padding: 0.25rem 0.55rem;
-    }
-
     .practice-controls {
       align-items: end;
       display: flex;

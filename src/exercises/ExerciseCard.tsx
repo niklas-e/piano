@@ -10,6 +10,7 @@ export function ExerciseCard(props: { exercise: Exercise; query: string }) {
       border-radius: 1.25rem;
       box-shadow: 0 18px 50px rgba(47, 37, 29, 0.08);
       padding: 1rem;
+      position: relative;
     }
 
     .exercise-card h2 {
@@ -24,6 +25,13 @@ export function ExerciseCard(props: { exercise: Exercise; query: string }) {
 
     .exercise-card a {
       text-decoration: none;
+    }
+
+    /* Make the whole card clickable while keeping the title as the only link. */
+    .exercise-card h2 a::after {
+      content: "";
+      position: absolute;
+      inset: 0;
     }
 
     .card-meta {
@@ -44,8 +52,7 @@ export function ExerciseCard(props: { exercise: Exercise; query: string }) {
   const typeLabel = () => (props.exercise.type === "scale" ? "Scale" : "Arpeggio");
 
   return (
-    <article class="exercise-card" >
-        <a href={`/exercises/${props.exercise.id}`}>
+    <article class="exercise-card">
       <div class="card-meta">
         <span>
           <HighlightedText text={typeLabel()} query={props.query} />
@@ -58,12 +65,13 @@ export function ExerciseCard(props: { exercise: Exercise; query: string }) {
         </span>
       </div>
       <h2>
+        <a href={`/exercises/${props.exercise.id}`}>
           <HighlightedText text={props.exercise.title} query={props.query} />
+        </a>
       </h2>
       <p>
         <HighlightedText text={props.exercise.notes.join(" - ")} query={props.query} />
       </p>
-        </a>
     </article>
   );
 }

@@ -106,10 +106,15 @@ export function ExercisesPage() {
             onInput={(event) => setSearch(event.currentTarget.value)}
             type="search"
             placeholder="C major, arpeggio, A..."
+            aria-label="Search exercises"
           />
         </label>
         <label>
-          <select value={typeFilter()} onChange={(event) => updateTypeFilter(event.currentTarget.value)}>
+          <select
+            value={typeFilter()}
+            onChange={(event) => updateTypeFilter(event.currentTarget.value)}
+            aria-label="Exercise type"
+          >
             <option value="all">All exercises</option>
             <option value="scale">Scales</option>
             <option value="arpeggio">Arpeggios</option>
