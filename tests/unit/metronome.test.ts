@@ -159,6 +159,46 @@ test("metronome engine keeps visual pulses on BPM after async resume failure fre
   }
 });
 
+import { formatElapsed, tapTempoBpm, TAP_RESET_GAP_MS } from "../../src/common/metronome.ts";
+
+test("tapTempoBpm returns null until there are at least two taps", () => {
+  assert.equal(tapTempoBpm([]), null);
+  assert.equal(tapTempoBpm([1000]), null);
+});
+
+test("tapTempoBpm converts a steady tap interval to BPM", () => {
+  assert.equal(tapTempoBpm([0, 500]), 120);
+  assert.equal(tapTempoBpm([0, 500, 1000, 1500]), 120);
+});
+
+test("tapTempoBpm averages only the last four intervals", () => {
+  // intervals: [2000, 500, 500, 500, 500]; window keeps the last four (avg 500) -> 120
+  assert.equal(tapTempoBpm([0, 2000, 2500, 3000, 3500, 4000]), 120);
+});
+
+test("tapTempoBpm starts a fresh run after a gap longer than the reset window", () => {
+  // first interval (5000ms) exceeds TAP_RESET_GAP_MS, so only [5000, 5500] count -> 120
+  assert.ok(5000 > TAP_RESET_GAP_MS);
+  assert.equal(tapTempoBpm([0, 5000, 5500]), 120);
+});
+
+test("tapTempoBpm clamps fast tapping to the maximum BPM", () => {
+  assert.equal(tapTempoBpm([0, 100]), 240); // 600bpm -> clamp 240
+});
+
+test("tapTempoBpm treats a 2000ms interval as the slowest in-run tempo", () => {
+  // 2000ms is NOT > TAP_RESET_GAP_MS, so it stays in the run; 60000/2000 = 30 (the floor).
+  // Sub-30 BPM is unreachable by design: every in-run interval is <= 2000ms.
+  assert.equal(tapTempoBpm([0, 2000]), 30);
+});
+
+test("formatElapsed renders M:SS and floors to whole seconds", () => {
+  assert.equal(formatElapsed(0), "0:00");
+  assert.equal(formatElapsed(65_000), "1:05");
+  assert.equal(formatElapsed(605_000), "10:05");
+  assert.equal(formatElapsed(-100), "0:00");
+});
+
 test("metronome engine keeps visual pulses running when audio graph scheduling throws", () => {
   const originalPerformance = globalThis.performance;
   const originalWindow = globalThis.window;

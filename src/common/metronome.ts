@@ -32,6 +32,47 @@ export function msPerBeat(bpm: number): number {
   return 60_000 / clampBpm(bpm);
 }
 
+export const TAP_RESET_GAP_MS = 2000;
+const TAP_AVERAGE_INTERVALS = 4;
+
+export function tapTempoBpm(timestamps: number[]): number | null {
+  if (timestamps.length < 2) {
+    return null;
+  }
+
+  let runStart = 0;
+  for (let i = 1; i < timestamps.length; i += 1) {
+    if (timestamps[i] - timestamps[i - 1] > TAP_RESET_GAP_MS) {
+      runStart = i;
+    }
+  }
+
+  const run = timestamps.slice(runStart);
+  if (run.length < 2) {
+    return null;
+  }
+
+  const intervals: number[] = [];
+  for (let i = 1; i < run.length; i += 1) {
+    intervals.push(run[i] - run[i - 1]);
+  }
+
+  const recent = intervals.slice(-TAP_AVERAGE_INTERVALS);
+  const average = recent.reduce((sum, value) => sum + value, 0) / recent.length;
+  if (average <= 0) {
+    return null;
+  }
+
+  return clampBpm(60_000 / average);
+}
+
+export function formatElapsed(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
   let bpm = clampBpm(initialBpm);
   let audioContext: AudioContext | undefined;
