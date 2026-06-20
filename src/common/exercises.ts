@@ -29,24 +29,34 @@ const arpeggioFingering = {
 } as const satisfies Record<Hand, readonly Finger[]>;
 
 export const exercises = [
-  scale("c-major-scale", "C major scale", "C", "major", ["C", "D", "E", "F", "G", "A", "B", "C"], majorScaleFingering),
-  scale("g-major-scale", "G major scale", "G", "major", ["G", "A", "B", "C", "D", "E", "F#", "G"], majorScaleFingering),
-  scale("d-major-scale", "D major scale", "D", "major", ["D", "E", "F#", "G", "A", "B", "C#", "D"], majorScaleFingering),
   scale("a-major-scale", "A major scale", "A", "major", ["A", "B", "C#", "D", "E", "F#", "G#", "A"], majorScaleFingering),
+  scale("b-major-scale", "B major scale", "B", "major", ["B", "C#", "D#", "E", "F#", "G#", "A#", "B"], majorScaleFingering),
+  scale("c-major-scale", "C major scale", "C", "major", ["C", "D", "E", "F", "G", "A", "B", "C"], majorScaleFingering),
+  scale("d-major-scale", "D major scale", "D", "major", ["D", "E", "F#", "G", "A", "B", "C#", "D"], majorScaleFingering),
   scale("e-major-scale", "E major scale", "E", "major", ["E", "F#", "G#", "A", "B", "C#", "D#", "E"], majorScaleFingering),
-  scale("a-natural-minor-scale", "A natural minor scale", "A", "natural minor", ["A", "B", "C", "D", "E", "F", "G", "A"], minorScaleFingering),
-  scale("e-natural-minor-scale", "E natural minor scale", "E", "natural minor", ["E", "F#", "G", "A", "B", "C", "D", "E"], minorScaleFingering),
-  scale("b-natural-minor-scale", "B natural minor scale", "B", "natural minor", ["B", "C#", "D", "E", "F#", "G", "A", "B"], minorScaleFingering),
-  scale("f-sharp-natural-minor-scale", "F# natural minor scale", "F#", "natural minor", ["F#", "G#", "A", "B", "C#", "D", "E", "F#"], minorScaleFingering),
-  arpeggio("c-major-arpeggio", "C major arpeggio", "C", "major", ["C", "E", "G", "C"]),
-  arpeggio("g-major-arpeggio", "G major arpeggio", "G", "major", ["G", "B", "D", "G"]),
-  arpeggio("d-major-arpeggio", "D major arpeggio", "D", "major", ["D", "F#", "A", "D"]),
+  scale("f-major-scale", "F major scale", "F", "major", ["F", "G", "A", "A#", "C", "D", "E", "F"], majorScaleFingering),
+  scale("g-major-scale", "G major scale", "G", "major", ["G", "A", "B", "C", "D", "E", "F#", "G"], majorScaleFingering),
+  scale("a-minor-scale", "A natural minor scale", "A", "minor", ["A", "B", "C", "D", "E", "F", "G", "A"], minorScaleFingering),
+  scale("b-minor-scale", "B natural minor scale", "B", "minor", ["B", "C#", "D", "E", "F#", "G", "A", "B"], minorScaleFingering),
+  scale("c-minor-scale", "C natural minor scale", "C", "minor", ["C", "D", "D#", "F", "G", "G#", "A#", "C"], minorScaleFingering),
+  scale("d-minor-scale", "D natural minor scale", "D", "minor", ["D", "E", "F", "G", "A", "A#", "C", "D"], minorScaleFingering),
+  scale("e-minor-scale", "E natural minor scale", "E", "minor", ["E", "F#", "G", "A", "B", "C", "D", "E"], minorScaleFingering),
+  scale("f-minor-scale", "F minor scale", "F", "minor", ["F", "G", "G#", "A#", "C", "C#", "D#", "F"], minorScaleFingering),
+  scale("g-minor-scale", "G minor scale", "G", "minor", ["G", "A", "A#", "C", "D", "D#", "F", "G"], minorScaleFingering),
   arpeggio("a-major-arpeggio", "A major arpeggio", "A", "major", ["A", "C#", "E", "A"]),
+  arpeggio("b-major-arpeggio", "B major arpeggio", "B", "major", ["B", "D#", "F#", "B"]),
+  arpeggio("c-major-arpeggio", "C major arpeggio", "C", "major", ["C", "E", "G", "C"]),
+  arpeggio("d-major-arpeggio", "D major arpeggio", "D", "major", ["D", "F#", "A", "D"]),
   arpeggio("e-major-arpeggio", "E major arpeggio", "E", "major", ["E", "G#", "B", "E"]),
+  arpeggio("f-major-arpeggio", "F major arpeggio", "F", "major", ["F", "A", "C", "F"]),
+  arpeggio("g-major-arpeggio", "G major arpeggio", "G", "major", ["G", "B", "D", "G"]),
   arpeggio("a-minor-arpeggio", "A minor arpeggio", "A", "minor", ["A", "C", "E", "A"]),
-  arpeggio("e-minor-arpeggio", "E minor arpeggio", "E", "minor", ["E", "G", "B", "E"]),
+  arpeggio("b-minor-arpeggio", "B minor arpeggio", "B", "minor", ["B", "D", "F#", "B"]),
+  arpeggio("c-minor-arpeggio", "C minor arpeggio", "C", "minor", ["C", "D#", "G", "C"]),
   arpeggio("d-minor-arpeggio", "D minor arpeggio", "D", "minor", ["D", "F", "A", "D"]),
-  arpeggio("b-minor-arpeggio", "B minor arpeggio", "B", "minor", ["B", "D", "F#", "B"])
+  arpeggio("e-minor-arpeggio", "E minor arpeggio", "E", "minor", ["E", "G", "B", "E"]),
+  arpeggio("f-minor-arpeggio", "F minor arpeggio", "F", "minor", ["F", "G#", "C", "F"]),
+  arpeggio("g-minor-arpeggio", "G minor arpeggio", "G", "minor", ["G", "A#", "D", "G"])
 ] as const satisfies readonly Exercise[];
 
 export function getExerciseById(id: string): Exercise | undefined {
