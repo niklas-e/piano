@@ -30,10 +30,13 @@ test("scale detail renders notes, fingering, keyboard, and persists last opened 
 test("hand selection updates visible fingering and persists", async ({ page }) => {
   await page.goto("/exercises/c-major-scale");
 
-  await page.getByLabel("Hand").selectOption("left");
+  const introBox = await page.locator(".exercise-header").boundingBox();
+  expect(introBox?.height ?? 999).toBeLessThan(180);
+
+  await page.getByRole("radio", { name: "Left hand" }).check();
   await expect(page.getByText("5 - 4 - 3 - 2 - 1 - 3 - 2 - 1")).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel("Hand")).toHaveValue("left");
+  await expect(page.getByRole("radio", { name: "Left hand" })).toBeChecked();
 });
 
 test("arpeggio detail renders chord-tone pattern", async ({ page }) => {

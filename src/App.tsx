@@ -279,31 +279,43 @@ function ExerciseDetail(props: { exercise: Exercise }) {
 
   return (
     <section aria-labelledby="exercise-heading" class="stack">
-      <div class="section-intro">
+      <div class="exercise-header">
         <p class="eyebrow">{props.exercise.type === "scale" ? "Scale" : "Arpeggio"}</p>
         <h1 id="exercise-heading">{props.exercise.title}</h1>
         <p>{props.exercise.description}</p>
+        <div class="detail-chips" aria-label="Exercise details">
+          <span>{props.exercise.tonic}</span>
+          <span>{props.exercise.quality}</span>
+          <span>{props.exercise.range}</span>
+        </div>
       </div>
 
-      <dl class="summary-grid">
-        <div>
-          <dt>Tonic</dt>
-          <dd>{props.exercise.tonic}</dd>
-        </div>
-        <div>
-          <dt>Quality</dt>
-          <dd>{props.exercise.quality}</dd>
-        </div>
-      </dl>
-
       <div class="practice-controls">
-        <label class="hand-select">
-          <span>Hand</span>
-          <select value={hand()} onChange={(event) => updateHand(event.currentTarget.value)}>
-            <option value="right">Right hand</option>
-            <option value="left">Left hand</option>
-          </select>
-        </label>
+        <fieldset class="segmented-control">
+          <legend>Hand</legend>
+          <div class="segmented-options">
+            <label>
+              <input
+                type="radio"
+                name="hand"
+                value="right"
+                checked={hand() === "right"}
+                onChange={() => updateHand("right")}
+              />
+              Right hand
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="hand"
+                value="left"
+                checked={hand() === "left"}
+                onChange={() => updateHand("left")}
+              />
+              Left hand
+            </label>
+          </div>
+        </fieldset>
 
         <fieldset class="range-select">
           <legend>Range</legend>
