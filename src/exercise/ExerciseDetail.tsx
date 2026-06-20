@@ -143,7 +143,6 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
 
       <div class="practice-controls">
         <fieldset class="segmented-control">
-          <legend>Hand</legend>
           <div class="segmented-options">
             <label>
               <input
@@ -169,7 +168,6 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
         </fieldset>
 
         <fieldset class="range-stepper">
-          <legend>Range</legend>
           <div class="stepper-control">
             <StepperButton ariaLabel="Decrease range" direction="decrement" onClick={() => updateRange(-1)} disabled={range() === 1} />
             <span class="stepper-label" aria-live="polite">{practice().label}</span>

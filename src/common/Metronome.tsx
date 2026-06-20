@@ -171,7 +171,7 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
 
     @keyframes pulse-pop {
       0% {
-        transform: scale(1.03);
+        transform: scale(1.15);
       }
       100% {
         transform: scale(1);
@@ -180,7 +180,7 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
 
     @keyframes pulse-pop-alt {
       0% {
-        transform: scale(1.03);
+        transform: scale(1.15);
       }
       100% {
         transform: scale(1);
