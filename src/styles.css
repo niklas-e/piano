@@ -183,6 +183,13 @@ section h1 {
   padding: 1rem;
 }
 
+.search-match {
+  background: #f3c05f;
+  border-radius: 0.2rem;
+  color: inherit;
+  padding: 0 0.08em;
+}
+
 @media (max-width: 640px) {
   .catalog-controls {
     grid-template-columns: 1fr;

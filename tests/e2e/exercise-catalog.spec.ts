@@ -20,6 +20,18 @@ test("catalog search filters by title and tonic", async ({ page }) => {
   await expect(page.getByRole("link", { name: "D major scale" })).toBeVisible();
 });
 
+test("catalog ranks title matches before content matches and highlights search text", async ({ page }) => {
+  await page.goto("/exercises");
+
+  await page.getByLabel("Search exercises").fill("minor");
+  const resultLinks = page.locator(".exercise-card h2 a");
+  await expect(resultLinks.first()).toHaveText(/minor/);
+  await expect(page.locator("mark.search-match").first()).toHaveText(/minor/i);
+
+  await page.getByLabel("Search exercises").fill("F#");
+  await expect(page.locator("mark.search-match").first()).toBeVisible();
+});
+
 test("catalog type filter persists", async ({ page }) => {
   await page.goto("/exercises");
 

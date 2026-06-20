@@ -92,15 +92,11 @@ function ExercisesPage() {
     const normalizedSearch = search().trim().toLowerCase();
     const selectedType = typeFilter();
 
-    return exercises.filter((exercise) => {
-      const matchesType = selectedType === "all" || exercise.type === selectedType;
-      const matchesSearch =
-        normalizedSearch.length === 0 ||
-        exercise.title.toLowerCase().includes(normalizedSearch) ||
-        exercise.tonic.toLowerCase().includes(normalizedSearch);
-
-      return matchesType && matchesSearch;
-    });
+    return exercises
+      .map((exercise) => ({ exercise, rank: rankExercise(exercise, normalizedSearch) }))
+      .filter(({ exercise, rank }) => (selectedType === "all" || exercise.type === selectedType) && Number.isFinite(rank))
+      .sort((left, right) => left.rank - right.rank)
+      .map(({ exercise }) => exercise);
   });
 
   const updateTypeFilter = (value: string) => {
@@ -147,7 +143,7 @@ function ExercisesPage() {
 
       <div class="exercise-grid" aria-label="Exercise catalog">
         <For each={filteredExercises()}>
-          {(exercise) => <ExerciseCard exercise={exercise} />}
+          {(exercise) => <ExerciseCard exercise={exercise} query={search()} />}
         </For>
       </div>
 
@@ -158,22 +154,96 @@ function ExercisesPage() {
   );
 }
 
-function ExerciseCard(props: { exercise: Exercise }) {
+function ExerciseCard(props: { exercise: Exercise; query: string }) {
   const typeLabel = () => (props.exercise.type === "scale" ? "Scale" : "Arpeggio");
 
   return (
     <article class="exercise-card">
       <div class="card-meta">
-        <span>{typeLabel()}</span>
-        <span>{props.exercise.tonic}</span>
-        <span>{props.exercise.range}</span>
+        <span>
+          <HighlightedText text={typeLabel()} query={props.query} />
+        </span>
+        <span>
+          <HighlightedText text={props.exercise.tonic} query={props.query} />
+        </span>
+        <span>
+          <HighlightedText text={props.exercise.quality} query={props.query} />
+        </span>
+        <span>
+          <HighlightedText text={props.exercise.range} query={props.query} />
+        </span>
       </div>
       <h2>
-        <a href={`/exercises/${props.exercise.id}`}>{props.exercise.title}</a>
+        <a href={`/exercises/${props.exercise.id}`}>
+          <HighlightedText text={props.exercise.title} query={props.query} />
+        </a>
       </h2>
-      <p>{props.exercise.notes.join(" - ")}</p>
+      <p>
+        <HighlightedText text={props.exercise.notes.join(" - ")} query={props.query} />
+      </p>
     </article>
   );
+}
+
+function rankExercise(exercise: Exercise, query: string): number {
+  const normalizedQuery = query.trim().toLowerCase();
+
+  if (normalizedQuery.length === 0) {
+    return 0;
+  }
+
+  if (exercise.title.toLowerCase().includes(normalizedQuery)) {
+    return 0;
+  }
+
+  if (
+    exercise.tonic.toLowerCase().includes(normalizedQuery) ||
+    exercise.type.toLowerCase().includes(normalizedQuery) ||
+    exercise.quality.toLowerCase().includes(normalizedQuery)
+  ) {
+    return 1;
+  }
+
+  if (exercise.notes.some((note) => note.toLowerCase().includes(normalizedQuery))) {
+    return 2;
+  }
+
+  return Infinity;
+}
+
+function HighlightedText(props: { text: string; query: string }) {
+  const normalizedQuery = () => props.query.trim().toLowerCase();
+  const segments = createMemo(() => {
+    const query = normalizedQuery();
+
+    if (query.length === 0) {
+      return [props.text];
+    }
+
+    const text = props.text;
+    const lowerText = text.toLowerCase();
+    const parts = [];
+    let currentIndex = 0;
+    let matchIndex = lowerText.indexOf(query, currentIndex);
+
+    while (matchIndex >= 0) {
+      if (matchIndex > currentIndex) {
+        parts.push(text.slice(currentIndex, matchIndex));
+      }
+
+      parts.push(<mark class="search-match">{text.slice(matchIndex, matchIndex + query.length)}</mark>);
+      currentIndex = matchIndex + query.length;
+      matchIndex = lowerText.indexOf(query, currentIndex);
+    }
+
+    if (currentIndex < text.length) {
+      parts.push(text.slice(currentIndex));
+    }
+
+    return parts;
+  });
+
+  return <>{segments()}</>;
 }
 
 function ExercisePage(props: { id: string }) {
