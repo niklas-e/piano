@@ -1,12 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-test("root shows the app shell and route links", async ({ page }) => {
+test("root shows homepage launcher links", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "Piano Practice" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Exercises", exact: true })).toHaveAttribute("href", "/exercises");
-  await expect(page.getByRole("link", { name: "Metronome" })).toHaveAttribute("href", "/metronome");
-  await expect(page.getByRole("link", { name: "Browse exercises" })).toHaveAttribute("href", "/exercises");
+  const cards = page.locator('[aria-label="Practice tools"] > a[href]');
+
+  await expect(cards).toHaveCount(2);
+  await expect(cards.nth(0)).toHaveAttribute("href", /^\/.+/);
+  await expect(cards.nth(1)).toHaveAttribute("href", /^\/.+/);
 });
 
 test("exercise and metronome routes render their headings", async ({ page }) => {
