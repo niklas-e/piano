@@ -9,10 +9,7 @@ export function MetronomePage() {
   `;
 
   return (
-    <section aria-labelledby="metronome-heading" class="stack metronome-view">
-      <div class="section-intro">
-        <h1 id="metronome-heading">Metronome</h1>
-      </div>
+    <section aria-label="Metronome" class="stack metronome-view">
       <MetronomeControls variant="full" />
     </section>
   );

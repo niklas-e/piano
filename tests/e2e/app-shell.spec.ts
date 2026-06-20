@@ -11,10 +11,16 @@ test("root shows the app shell and route links", async ({ page }) => {
 
 test("exercise and metronome routes render their headings", async ({ page }) => {
   await page.goto("/exercises");
-  await expect(page.getByRole("heading", { name: "Exercises" })).toBeVisible();
+  await expect(page.locator(".site-title")).toHaveText("Exercises");
+  await expect(page.getByRole("heading", { name: "Exercises" })).toHaveCount(0);
 
   await page.goto("/metronome");
-  await expect(page.getByRole("heading", { name: "Metronome" })).toBeVisible();
+  await expect(page.locator(".site-title")).toHaveText("Metronome");
+  await expect(page.getByRole("heading", { name: "Metronome" })).toHaveCount(0);
+
+  await page.goto("/exercises/c-major-scale");
+  await expect(page.locator(".site-title")).toHaveText("Exercises");
+  await expect(page.getByRole("heading", { name: "C major scale" })).toBeVisible();
 });
 
 test("unknown routes render useful navigation", async ({ page }) => {

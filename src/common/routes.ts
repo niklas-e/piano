@@ -5,6 +5,11 @@ export type Route =
   | { name: "metronome" }
   | { name: "notFound" };
 
+export type RouteHeader = {
+  href: string;
+  title: string;
+};
+
 export function parsePathname(pathname: string): Route {
   const normalizedPathname = normalizePathname(pathname);
 
@@ -26,6 +31,31 @@ export function parsePathname(pathname: string): Route {
   }
 
   return { name: "notFound" };
+}
+
+export function getRouteHeader(route: Route): RouteHeader {
+  switch (route.name) {
+    case "exercises":
+    case "exercise":
+      return { href: "/exercises", title: "Exercises" };
+    case "metronome":
+      return { href: "/metronome", title: "Metronome" };
+    case "home":
+    case "notFound":
+      return { href: "/", title: "Piano Practice" };
+  }
+}
+
+export function isPrimaryNavigationRoute(route: Route, href: string): boolean {
+  if (href === "/exercises") {
+    return route.name === "exercises" || route.name === "exercise";
+  }
+
+  if (href === "/metronome") {
+    return route.name === "metronome";
+  }
+
+  return false;
 }
 
 function normalizePathname(pathname: string): string {

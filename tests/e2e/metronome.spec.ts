@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 test("full metronome starts, stops, adjusts BPM, and persists tempo", async ({ page }) => {
   await page.goto("/metronome");
 
-  await expect(page.getByRole("heading", { name: "Metronome" })).toBeVisible();
+  await expect(page.locator(".site-title")).toHaveText("Metronome");
   await expect(page.getByLabel("Tempo in BPM")).toHaveValue("80");
 
   await page.getByRole("button", { name: "+5 BPM" }).click();

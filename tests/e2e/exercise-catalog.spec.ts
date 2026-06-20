@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("catalog renders exercises as a plain list", async ({ page }) => {
   await page.goto("/exercises");
 
-  await expect(page.getByRole("heading", { name: "Exercises" })).toBeVisible();
+  await expect(page.locator(".site-title")).toHaveText("Exercises");
   await expect(page.getByRole("link", { name: "C major scale" })).toHaveAttribute("href", "/exercises/c-major-scale");
   await expect(page.getByRole("link", { name: "A minor arpeggio" })).toHaveAttribute("href", "/exercises/a-minor-arpeggio");
   await expect(page.getByText("ABRSM", { exact: false })).toHaveCount(0);

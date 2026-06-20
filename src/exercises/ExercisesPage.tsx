@@ -86,11 +86,7 @@ export function ExercisesPage() {
   };
 
   return (
-    <section aria-labelledby="exercises-heading" class="stack">
-      <div class="section-intro">
-        <h1 id="exercises-heading">Exercises</h1>
-      </div>
-
+    <section aria-label="Exercises" class="stack">
       <Show when={lastExercise()}>
         {(exercise) => (
           <a class="continue-card" href={`/exercises/${exercise().id}`}>
