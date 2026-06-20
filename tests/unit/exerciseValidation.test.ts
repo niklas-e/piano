@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { exercises, getExerciseById, type Exercise } from "../../src/exercises.ts";
-import { validateExercise, validateExercises } from "../../src/exerciseValidation.ts";
+import { exercises, getExerciseById, type Exercise } from "../../src/common/exercises.ts";
+import { validateExercise, validateExercises } from "../../src/common/exerciseValidation.ts";
 
 test("bundled exercises are valid and have unique ids", () => {
   assert.deepEqual(validateExercises(exercises), []);

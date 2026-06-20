@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildKeyboard, isHighlightedKey } from "../../src/keyboard.ts";
+import { buildKeyboard, isHighlightedKey } from "../../src/common/keyboard.ts";
 
 test("buildKeyboard creates complete octave ranges", () => {
   const keys = buildKeyboard(3, 4);

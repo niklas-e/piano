@@ -12,7 +12,7 @@ import {
   writeHandPreference,
   writeLastExerciseIdPreference,
   type StorageLike
-} from "../../src/preferences.ts";
+} from "../../src/common/preferences.ts";
 
 test("BPM preference validates bounds", () => {
   const storage = memoryStorage();

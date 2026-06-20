@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { clampBpm, createMetronomeEngine, msPerBeat } from "../../src/metronome.ts";
+import { clampBpm, createMetronomeEngine, msPerBeat } from "../../src/common/metronome.ts";
 
 test("clampBpm keeps tempo in the supported range", () => {
   assert.equal(clampBpm(20), 30);

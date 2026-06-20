@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { exercises } from "../../src/exercises.ts";
-import { derivePracticeRange } from "../../src/practiceRange.ts";
+import { exercises } from "../../src/common/exercises.ts";
+import { derivePracticeRange } from "../../src/common/practiceRange.ts";
 
 const cMajor = exercises.find((exercise) => exercise.id === "c-major-scale");
 const aMinorArpeggio = exercises.find((exercise) => exercise.id === "a-minor-arpeggio");
