@@ -1,6 +1,7 @@
 import { Show, createSignal, onCleanup, onMount } from "solid-js";
 import { css } from "solid-styled";
 import { clampBpm, createMetronomeEngine, formatElapsed, msPerBeat, tapTempoBpm, TAP_RESET_GAP_MS } from "./metronome";
+import { PhIcon } from "./PhIcon";
 import { readBpmPreference, writeBpmPreference } from "./preferences";
 import { StepperButton } from "./StepperButton";
 
@@ -82,12 +83,16 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
     }
 
     .tap-button {
+      align-items: center;
       background: transparent;
       border: 1px solid #2f251d;
       border-radius: 999px;
       color: #2f251d;
       cursor: pointer;
+      display: inline-flex;
+      gap: 0.45rem;
       font-weight: 900;
+      justify-content: center;
       min-height: 2.75rem;
       padding: 0.65rem 1.1rem;
     }
@@ -351,6 +356,7 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
               {isRunning() ? "Stop metronome" : "Start metronome"}
             </button>
             <button type="button" class="tap-button" onClick={handleTap} aria-label="Tap tempo">
+              <PhIcon name="metronome" aria-hidden="true" size={18} weight="bold" />
               Tap
             </button>
             <Show when={audioError()}>{(message) => <p class="audio-message">{message()}</p>}</Show>

@@ -1,5 +1,6 @@
 import { For, Show, createMemo, createSignal } from "solid-js";
 import { css } from "solid-styled";
+import { PhIcon } from "../common/PhIcon";
 import { exercises, getExerciseById, type Exercise } from "../common/exercises";
 import {
   readExerciseTypeFilterPreference,
@@ -12,13 +13,15 @@ import { ExerciseCard } from "./ExerciseCard";
 export function ExercisesPage() {
   css`
     .continue-card {
+      align-items: center;
       background: #fffaf2;
       border: 1px solid #dfd1bf;
       border-radius: 1.25rem;
       box-shadow: 0 18px 50px rgba(47, 37, 29, 0.08);
       display: inline-flex;
+      gap: 0.65rem;
       font-weight: 800;
-      padding: 1rem 1.25rem;
+      padding: 0.75rem 0.85rem;
       text-decoration: none;
     }
 
@@ -34,13 +37,32 @@ export function ExercisesPage() {
       font-weight: 800;
     }
 
-    .catalog-controls input,
+    .search-field,
     .catalog-controls select {
       background: #fffaf2;
       border: 1px solid #8e7b67;
       border-radius: 0.8rem;
       color: #17130f;
+    }
+
+    .search-field {
+      align-items: center;
+      display: flex;
+      overflow: hidden;
+      padding-left: 0.85rem;
+    }
+
+    .search-field input {
+      background: transparent;
+      border: none;
+      color: inherit;
+      flex: 1;
       padding: 0.75rem 0.85rem;
+      padding-left: 0.55rem;
+    }
+
+    .search-field input:focus {
+      outline: none;
     }
 
     .exercise-grid {
@@ -90,6 +112,7 @@ export function ExercisesPage() {
       <Show when={lastExercise()}>
         {(exercise) => (
           <a class="continue-card" href={`/exercises/${exercise().id}`}>
+            <PhIcon name="hourglass-low" aria-hidden="true" size={18} />
             Continue with {exercise().title}
           </a>
         )}
@@ -97,13 +120,16 @@ export function ExercisesPage() {
 
       <div class="catalog-controls">
         <label>
-          <input
-            value={search()}
-            onInput={(event) => setSearch(event.currentTarget.value)}
-            type="search"
-            placeholder="C major, arpeggio, A..."
-            aria-label="Search exercises"
-          />
+          <div class="search-field">
+            <PhIcon name="magnifying-glass" aria-hidden="true" size={18} weight="bold" />
+            <input
+              value={search()}
+              onInput={(event) => setSearch(event.currentTarget.value)}
+              type="search"
+              placeholder="C major, arpeggio, A..."
+              aria-label="Search exercises"
+            />
+          </div>
         </label>
         <label>
           <select

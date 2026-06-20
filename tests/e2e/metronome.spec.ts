@@ -24,6 +24,8 @@ test("full metronome starts, stops, adjusts BPM, and persists tempo", async ({ p
 test("full metronome tap tempo sets BPM and elapsed time resets on start", async ({ page }) => {
   await page.goto("/metronome");
 
+  await expect(page.getByRole("button", { name: "Tap tempo" }).locator(".ph-icon")).toHaveCount(1);
+
   // Four taps ~400ms apart -> ~150 BPM; assert the input changed away from 80.
   for (let i = 0; i < 4; i += 1) {
     await page.getByRole("button", { name: "Tap tempo" }).click();

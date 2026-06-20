@@ -6,6 +6,7 @@ test("catalog is usable at mobile width", async ({ page }) => {
 
   const menuButton = page.getByRole("button", { name: /navigation menu/i });
   await expect(menuButton).toBeVisible();
+  await expect(menuButton.locator(".ph-icon")).toHaveCount(1);
   await expect(menuButton).toHaveAttribute("aria-expanded", "false");
   await expect(page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Metronome" })).toBeHidden();
 

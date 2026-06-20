@@ -1,5 +1,6 @@
 import { For, createEffect, createSignal } from "solid-js";
 import { css } from "solid-styled";
+import { PhIcon } from "./PhIcon";
 import { getRouteHeader, isPrimaryNavigationRoute, type Route } from "./routes";
 
 const primaryNavigationItems = [
@@ -47,24 +48,14 @@ export function AppHeader(props: { route: Route; navigate: (href: string) => (ev
       display: none;
       align-items: center;
       justify-content: center;
-      flex-direction: column;
       background: #fffaf2;
       border: 1px solid #2f251d;
       border-radius: 999px;
       color: inherit;
       cursor: pointer;
-      gap: 0.3rem;
       min-height: 2.75rem;
       min-width: 2.75rem;
-      padding: 0.65rem;
-    }
-
-    .menu-toggle-bar {
-      background: currentColor;
-      border-radius: 999px;
-      display: block;
-      height: 2px;
-      width: 1.1rem;
+      padding: 0.55rem;
     }
 
     @media (max-width: 640px) {
@@ -121,9 +112,7 @@ export function AppHeader(props: { route: Route; navigate: (href: string) => (ev
         aria-label={isMenuOpen() ? "Close navigation menu" : "Open navigation menu"}
         onClick={() => setIsMenuOpen((open) => !open)}
       >
-        <span class="menu-toggle-bar" aria-hidden="true" />
-        <span class="menu-toggle-bar" aria-hidden="true" />
-        <span class="menu-toggle-bar" aria-hidden="true" />
+        {isMenuOpen() ? <PhIcon name="x" aria-hidden="true" size={20} weight="bold" /> : <PhIcon name="list" aria-hidden="true" size={20} weight="bold" />}
       </button>
 
       <nav id="primary-navigation" class={`site-nav${isMenuOpen() ? " is-open" : ""}`} aria-label="Primary navigation">

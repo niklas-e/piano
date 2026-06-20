@@ -13,6 +13,8 @@ test("catalog renders exercises as a plain list", async ({ page }) => {
 test("catalog search filters by title and tonic", async ({ page }) => {
   await page.goto("/exercises");
 
+  await expect(page.locator("label", { has: page.getByLabel("Search exercises") }).locator(".ph-icon")).toHaveCount(1);
+
   await page.getByLabel("Search exercises").fill("arpeggio");
   await expect(page.getByRole("link", { name: "A minor arpeggio" })).toBeVisible();
   await expect(page.getByRole("link", { name: "C major scale" })).toHaveCount(0);
@@ -53,5 +55,8 @@ test("catalog shows continue link for the last opened exercise", async ({ page }
   await page.addInitScript(() => window.localStorage.setItem("piano:last-exercise-id", "g-major-scale"));
   await page.goto("/exercises");
 
-  await expect(page.getByRole("link", { name: "Continue with G major scale" })).toHaveAttribute("href", "/exercises/g-major-scale");
+  const continueLink = page.getByRole("link", { name: "Continue with G major scale" });
+
+  await expect(continueLink).toHaveAttribute("href", "/exercises/g-major-scale");
+  await expect(continueLink.locator(".ph-icon")).toHaveCount(1);
 });
