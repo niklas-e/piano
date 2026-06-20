@@ -21,6 +21,26 @@ test("full metronome starts, stops, adjusts BPM, and persists tempo", async ({ p
   await expect(page.getByLabel("Tempo in BPM")).toHaveValue("85");
 });
 
+test("native buttons show a pressed state while pointer is held down", async ({ page }) => {
+  await page.goto("/metronome");
+
+  const button = page.getByRole("button", { name: "+5 BPM" });
+  const bounds = await button.boundingBox();
+  expect(bounds).not.toBeNull();
+
+  await page.mouse.move((bounds?.x ?? 0) + (bounds?.width ?? 0) / 2, (bounds?.y ?? 0) + (bounds?.height ?? 0) / 2);
+  await page.mouse.down();
+
+  await expect
+    .poll(() => button.evaluate((element) => getComputedStyle(element).filter))
+    .not.toBe("none");
+
+  await page.mouse.up();
+  await expect.
+    poll(() => button.evaluate((element) => getComputedStyle(element).filter))
+    .toBe("none");
+});
+
 test("full metronome tap tempo sets BPM and elapsed time resets on start", async ({ page }) => {
   await page.goto("/metronome");
 

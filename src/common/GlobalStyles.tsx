@@ -54,6 +54,11 @@ export function GlobalStyles() {
       button {
         appearance: none;
         background: none;
+        transition: filter 120ms ease, transform 120ms ease;
+      }
+
+      button:active:not(:disabled) {
+        filter: brightness(0.92);
       }
 
       :focus-visible {
