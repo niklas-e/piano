@@ -11,7 +11,7 @@ test("full metronome starts, stops, adjusts BPM, and persists tempo", async ({ p
 
   await page.getByRole("button", { name: "Start metronome" }).click();
   await expect(page.getByRole("button", { name: "Stop metronome" })).toHaveText("Stop metronome");
-  await expect(page.locator(".pulse .bpm-unit")).toBeVisible();
+  await expect(page.locator(".pulse .elapsed")).toBeVisible();
 
   await page.getByRole("button", { name: "Stop metronome" }).click();
   await expect(page.getByRole("button", { name: "Start metronome" })).toHaveText("Start metronome");
@@ -19,6 +19,24 @@ test("full metronome starts, stops, adjusts BPM, and persists tempo", async ({ p
 
   await page.reload();
   await expect(page.getByLabel("Tempo in BPM")).toHaveValue("85");
+});
+
+test("full metronome tap tempo sets BPM and elapsed time resets on start", async ({ page }) => {
+  await page.goto("/metronome");
+
+  // Four taps ~400ms apart -> ~150 BPM; assert the input changed away from 80.
+  for (let i = 0; i < 4; i += 1) {
+    await page.getByRole("button", { name: "Tap tempo" }).click();
+    await page.waitForTimeout(400);
+  }
+  await expect(page.getByLabel("Tempo in BPM")).not.toHaveValue("80");
+
+  await page.getByRole("button", { name: "Start metronome" }).click();
+  await expect(page.locator(".pulse .elapsed")).toBeVisible();
+  await expect.poll(() => page.locator(".pulse .elapsed").textContent()).not.toBe("0:00");
+
+  await page.getByRole("button", { name: "Stop metronome" }).click();
+  await expect(page.locator(".pulse .elapsed")).toHaveText("0:00");
 });
 
 test("compact metronome works from exercise pages", async ({ page }) => {
@@ -35,7 +53,7 @@ test("compact metronome works from exercise pages", async ({ page }) => {
   await expect(compactCard.locator(".bpm-readout")).toContainText("85");
   await page.getByRole("button", { name: "Start metronome" }).click();
   await expect(page.getByRole("button", { name: "Stop metronome" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open full metronome" })).toHaveAttribute("href", "/metronome");
+  await expect(page.getByRole("link", { name: "Open full metronome" })).toHaveCount(0);
 });
 
 test("visual pulse animation is finite and BPM-coupled", async ({ page }) => {
@@ -98,10 +116,7 @@ test("metronome shows audio-unavailable message when Web Audio resume fails asyn
   await expect(page.locator(".pulse")).toBeVisible();
   await expect(page.getByText("Audio click unavailable. Visual pulse is still active.")).toBeVisible();
   await expect
-    .poll(async () => {
-      const beatText = await page.locator(".pulse small").textContent();
-      return Number(beatText?.replace("Beat ", ""));
-    })
+    .poll(() => page.locator(".pulse").evaluate((element) => Number(element.getAttribute("data-beat") ?? "0")))
     .toBeGreaterThan(1);
 });
 
@@ -146,7 +161,7 @@ async function setTempo(page: Page, bpm: number) {
 }
 
 async function readBeatCount(page: Page) {
-  return page.locator(".pulse small").evaluate((element) => Number(element.textContent?.replace("Beat ", "")));
+  return page.locator(".pulse").evaluate((element) => Number(element.getAttribute("data-beat") ?? "0"));
 }
 
 async function readPulseAnimation(page: Page) {
