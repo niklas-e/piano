@@ -9,6 +9,17 @@ test("scale detail renders notes, fingering, keyboard, and persists last opened 
   await expect(page.getByRole("group", { name: "Practice keyboard" })).toBeVisible();
   await expect(page.getByTestId("key-C4")).toContainText("C");
   await expect(page.getByTestId("key-C4")).toContainText("1");
+  await expect(page.getByTestId("key-C#4")).toBeVisible();
+  await expect(page.getByTestId("key-C#4").locator(".key-label")).toHaveCount(0);
+  await expect(page.getByTestId("key-C#4")).not.toContainText("C#");
+  await expect(page.getByTestId("key-C#4")).toHaveAttribute("aria-label", /C#4/);
+
+  const whiteBox = await page.getByTestId("key-C4").boundingBox();
+  const blackBox = await page.getByTestId("key-C#4").boundingBox();
+  expect(blackBox?.y).toBeLessThanOrEqual((whiteBox?.y ?? 0) + 2);
+  expect(blackBox?.width ?? 999).toBeLessThan(whiteBox?.width ?? 0);
+  expect(blackBox?.height ?? 999).toBeLessThan(whiteBox?.height ?? 0);
+
   await page.getByLabel("2 octaves").check();
   await expect(page.getByText("C - D - E - F - G - A - B - C - D - E - F - G - A - B - C")).toBeVisible();
   await expect(page.getByTestId("key-C4")).toHaveAttribute("aria-label", "C4 highlighted");

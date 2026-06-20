@@ -261,6 +261,11 @@ function ExerciseDetail(props: { exercise: Exercise }) {
   const [range, setRange] = createSignal<PracticeRange>("1-octave");
   const keyboardKeys = buildKeyboard(3, 5);
   const practice = createMemo(() => derivePracticeRange(props.exercise, hand(), range()));
+  const whiteIndexForKey = (keyIndex: number) => {
+    const whiteKeysBefore = keyboardKeys.slice(0, keyIndex).filter((key) => key.type === "white").length;
+
+    return keyboardKeys[keyIndex].type === "white" ? whiteKeysBefore : whiteKeysBefore - 0.3;
+  };
 
   createEffect(() => {
     writeLastExerciseIdPreference(props.exercise.id);
@@ -339,7 +344,7 @@ function ExerciseDetail(props: { exercise: Exercise }) {
       <div class="keyboard-scroll" role="group" aria-label="Practice keyboard">
         <div class="keyboard">
           <For each={keyboardKeys}>
-            {(key) => {
+            {(key, index) => {
               const highlighted = () => isHighlightedKey(key, practice().notes);
               const firstFingerForNote = () => {
                 const noteIndex = practice().notes.indexOf(key.note);
@@ -351,8 +356,11 @@ function ExerciseDetail(props: { exercise: Exercise }) {
                   class={`piano-key ${key.type}${highlighted() ? " is-highlighted" : ""}`}
                   data-testid={`key-${key.id}`}
                   aria-label={`${key.note}${key.octave}${highlighted() ? " highlighted" : ""}`}
+                  style={{ "--key-index": String(index()), "--white-index": String(whiteIndexForKey(index())) }}
                 >
-                  <span>{key.note}</span>
+                  <Show when={key.type === "white"}>
+                    <span class="key-label">{key.note}</span>
+                  </Show>
                   <Show when={highlighted() && firstFingerForNote()}>
                     {(finger) => <strong>{finger()}</strong>}
                   </Show>
