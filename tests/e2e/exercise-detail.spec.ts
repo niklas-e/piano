@@ -78,6 +78,30 @@ test("hand selection updates visible fingering and persists", async ({ page }) =
   await expect(page.getByRole("radio", { name: "Left hand" })).toBeChecked();
 });
 
+test("notes panel shows a static minimap highlighting the exercise", async ({ page }) => {
+  await page.goto("/exercises/c-major-scale");
+
+  const minimap = page.locator(".practice-panel [data-testid='keyboard-minimap']");
+  await expect(minimap).toBeVisible();
+
+  // Right-hand C major (default) highlights C4 in the overview.
+  await expect(minimap.getByTestId("minimap-key-C4")).toHaveClass(/is-highlighted/);
+  await expect(minimap.getByTestId("minimap-key-D4")).toHaveClass(/is-highlighted/);
+  await expect(minimap.getByTestId("minimap-key-C#4")).not.toHaveClass(/is-highlighted/);
+
+  // The minimap has no note labels or fingering badges.
+  await expect(minimap.locator(".key-label")).toHaveCount(0);
+  await expect(minimap.locator("strong")).toHaveCount(0);
+
+  // Switching hand moves the highlight down an octave (left hand = octave 3).
+  await page.getByRole("radio", { name: "Left hand" }).check();
+  await expect(minimap.getByTestId("minimap-key-C3")).toHaveClass(/is-highlighted/);
+  // D4 is highlighted for the right hand but not the left (left hand plays D3),
+  // demonstrating the overview tracks the active range. (C4 stays lit for the
+  // left hand because the one-octave C major scale terminates on C4.)
+  await expect(minimap.getByTestId("minimap-key-D4")).not.toHaveClass(/is-highlighted/);
+});
+
 test("arpeggio detail renders chord-tone pattern", async ({ page }) => {
   await page.goto("/exercises/a-minor-arpeggio");
 

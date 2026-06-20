@@ -5,6 +5,7 @@ import { buildPianoKeyboard } from "../common/keyboard";
 import { derivePracticeRange, type PracticeRange } from "../common/practiceRange";
 import { readHandPreference, writeHandPreference, writeLastExerciseIdPreference } from "../common/preferences";
 import { Keyboard } from "../common/Keyboard";
+import { KeyboardMinimap } from "../common/KeyboardMinimap";
 import { MetronomeControls } from "../common/Metronome";
 
 export function ExerciseDetail(props: { exercise: Exercise }) {
@@ -218,6 +219,7 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
       <section class="practice-panel" aria-labelledby="notes-heading">
         <h2 id="notes-heading">Notes</h2>
         <p class="sequence">{props.exercise.notes.join(" - ")}</p>
+        <KeyboardMinimap keys={keyboardKeys} keyIds={practice().keyIds} />
       </section>
 
       <Keyboard
