@@ -2,6 +2,7 @@ import { Show, createSignal, onCleanup, onMount } from "solid-js";
 import { css } from "solid-styled";
 import { clampBpm, createMetronomeEngine, formatElapsed, msPerBeat, tapTempoBpm, TAP_RESET_GAP_MS } from "./metronome";
 import { readBpmPreference, writeBpmPreference } from "./preferences";
+import { StepperButton } from "./StepperButton";
 
 export function MetronomeControls(props: { variant: "full" | "compact" }) {
   css`
@@ -59,7 +60,6 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
       grid-template-columns: auto auto minmax(4rem, 1fr) auto auto;
     }
 
-    .tempo-bar button,
     .primary-button {
       background: #2f251d;
       border: 1px solid #2f251d;
@@ -124,20 +124,6 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
       border-radius: 999px;
       display: inline-flex;
       overflow: hidden;
-    }
-
-    .seg-control .seg-btn {
-      background: #2f251d;
-      border: none;
-      color: #fffaf2;
-      cursor: pointer;
-      font-weight: 900;
-      min-width: 2.1rem;
-      padding: 0.4rem 0.6rem;
-    }
-
-    .seg-control .seg-btn:hover {
-      background: #45372b;
     }
 
     .seg-control .seg-readout {
@@ -335,12 +321,10 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
           </div>
 
           <div class="tempo-bar">
-            <button type="button" onClick={() => updateBpm(bpm() - 5)} aria-label="-5 BPM">
-              -5
-            </button>
-            <button type="button" onClick={() => updateBpm(bpm() - 1)} aria-label="-1 BPM">
-              -
-            </button>
+            <StepperButton variant="pill" direction="decrement" ariaLabel="-5 BPM" onClick={() => updateBpm(bpm() - 5)}>
+              <span class="stepper-button-label">-5</span>
+            </StepperButton>
+            <StepperButton variant="pill" direction="decrement" ariaLabel="-1 BPM" onClick={() => updateBpm(bpm() - 1)} />
             <input
               class="tempo-field"
               aria-label="Tempo in BPM"
@@ -351,12 +335,10 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
               value={bpm()}
               onChange={(event) => updateBpm(Number(event.currentTarget.value))}
             />
-            <button type="button" onClick={() => updateBpm(bpm() + 1)} aria-label="+1 BPM">
-              +
-            </button>
-            <button type="button" onClick={() => updateBpm(bpm() + 5)} aria-label="+5 BPM">
-              +5
-            </button>
+            <StepperButton variant="pill" direction="increment" ariaLabel="+1 BPM" onClick={() => updateBpm(bpm() + 1)} />
+            <StepperButton variant="pill" direction="increment" ariaLabel="+5 BPM" onClick={() => updateBpm(bpm() + 5)}>
+              <span class="stepper-button-label">+5</span>
+            </StepperButton>
           </div>
 
           <div class="metronome-actions">
@@ -378,21 +360,17 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
     >
       <div class="metronome-card compact">
         <div class="seg-control" role="group" aria-label="Tempo in BPM">
-          <button type="button" class="seg-btn" onClick={() => updateBpm(bpm() - 5)} aria-label="-5 BPM">
-            -5
-          </button>
-          <button type="button" class="seg-btn" onClick={() => updateBpm(bpm() - 1)} aria-label="-1 BPM">
-            -
-          </button>
+          <StepperButton variant="segment" direction="decrement" ariaLabel="-5 BPM" onClick={() => updateBpm(bpm() - 5)}>
+            <span class="stepper-button-label">-5</span>
+          </StepperButton>
+          <StepperButton variant="segment" direction="decrement" ariaLabel="-1 BPM" onClick={() => updateBpm(bpm() - 1)} />
           <span class="seg-readout bpm-readout">
             <strong>{bpm()}</strong>
           </span>
-          <button type="button" class="seg-btn" onClick={() => updateBpm(bpm() + 1)} aria-label="+1 BPM">
-            +
-          </button>
-          <button type="button" class="seg-btn" onClick={() => updateBpm(bpm() + 5)} aria-label="+5 BPM">
-            +5
-          </button>
+          <StepperButton variant="segment" direction="increment" ariaLabel="+1 BPM" onClick={() => updateBpm(bpm() + 1)} />
+          <StepperButton variant="segment" direction="increment" ariaLabel="+5 BPM" onClick={() => updateBpm(bpm() + 5)}>
+            <span class="stepper-button-label">+5</span>
+          </StepperButton>
         </div>
 
         <span

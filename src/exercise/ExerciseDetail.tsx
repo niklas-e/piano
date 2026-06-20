@@ -7,6 +7,7 @@ import { readHandPreference, writeHandPreference, writeLastExerciseIdPreference 
 import { Keyboard } from "../common/Keyboard";
 import { KeyboardMinimap } from "../common/KeyboardMinimap";
 import { MetronomeControls } from "../common/Metronome";
+import { StepperButton } from "../common/StepperButton";
 
 export function ExerciseDetail(props: { exercise: Exercise }) {
   css`
@@ -89,28 +90,7 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
       padding: 0.2rem;
     }
 
-    .stepper-control button {
-      align-items: center;
-      background: #2f251d;
-      border: 0;
-      border-radius: 50%;
-      color: #fffaf2;
-      cursor: pointer;
-      display: flex;
-      font-size: 1.1rem;
-      font-weight: 900;
-      height: 2rem;
-      justify-content: center;
-      line-height: 1;
-      width: 2rem;
-    }
-
-    .stepper-control button:disabled {
-      cursor: not-allowed;
-      opacity: 0.42;
-    }
-
-    .stepper-control span {
+    .stepper-label {
       font-weight: 900;
       min-width: 5.8rem;
       text-align: center;
@@ -191,13 +171,9 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
         <fieldset class="range-stepper">
           <legend>Range</legend>
           <div class="stepper-control">
-            <button type="button" aria-label="Decrease range" onClick={() => updateRange(-1)} disabled={range() === 1}>
-              -
-            </button>
-            <span aria-live="polite">{practice().label}</span>
-            <button type="button" aria-label="Increase range" onClick={() => updateRange(1)} disabled={range() === 2}>
-              +
-            </button>
+            <StepperButton ariaLabel="Decrease range" direction="decrement" onClick={() => updateRange(-1)} disabled={range() === 1} />
+            <span class="stepper-label" aria-live="polite">{practice().label}</span>
+            <StepperButton ariaLabel="Increase range" direction="increment" onClick={() => updateRange(1)} disabled={range() === 2} />
           </div>
         </fieldset>
       </div>
