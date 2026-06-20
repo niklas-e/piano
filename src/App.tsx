@@ -2,6 +2,7 @@ import { For, Match, Show, Switch, createEffect, createMemo, createSignal, onCle
 import { exercises, getExerciseById, type Exercise, type Hand } from "./exercises";
 import { buildKeyboard, isHighlightedKey } from "./keyboard";
 import { clampBpm, createMetronomeEngine, msPerBeat } from "./metronome";
+import { derivePracticeRange, type PracticeRange } from "./practiceRange";
 import {
   readBpmPreference,
   readExerciseTypeFilterPreference,
@@ -187,7 +188,9 @@ function ExercisePage(props: { id: string }) {
 
 function ExerciseDetail(props: { exercise: Exercise }) {
   const [hand, setHand] = createSignal<Hand>(readHandPreference());
+  const [range, setRange] = createSignal<PracticeRange>("1-octave");
   const keyboardKeys = buildKeyboard(3, 5);
+  const practice = createMemo(() => derivePracticeRange(props.exercise, hand(), range()));
 
   createEffect(() => {
     writeLastExerciseIdPreference(props.exercise.id);
@@ -198,8 +201,6 @@ function ExerciseDetail(props: { exercise: Exercise }) {
     setHand(nextHand);
     writeHandPreference(nextHand);
   };
-
-  const selectedFingering = () => props.exercise.fingering[hand()];
 
   return (
     <section aria-labelledby="exercise-heading" class="stack">
@@ -218,28 +219,50 @@ function ExerciseDetail(props: { exercise: Exercise }) {
           <dt>Quality</dt>
           <dd>{props.exercise.quality}</dd>
         </div>
-        <div>
-          <dt>Range</dt>
-          <dd>{props.exercise.range}</dd>
-        </div>
       </dl>
 
-      <label class="hand-select">
-        <span>Hand</span>
-        <select value={hand()} onChange={(event) => updateHand(event.currentTarget.value)}>
-          <option value="right">Right hand</option>
-          <option value="left">Left hand</option>
-        </select>
-      </label>
+      <div class="practice-controls">
+        <label class="hand-select">
+          <span>Hand</span>
+          <select value={hand()} onChange={(event) => updateHand(event.currentTarget.value)}>
+            <option value="right">Right hand</option>
+            <option value="left">Left hand</option>
+          </select>
+        </label>
+
+        <fieldset class="range-select">
+          <legend>Range</legend>
+          <label>
+            <input
+              type="radio"
+              name="practice-range"
+              value="1-octave"
+              checked={range() === "1-octave"}
+              onChange={() => setRange("1-octave")}
+            />
+            <span>1 octave</span>
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="practice-range"
+              value="2-octaves"
+              checked={range() === "2-octaves"}
+              onChange={() => setRange("2-octaves")}
+            />
+            <span>2 octaves</span>
+          </label>
+        </fieldset>
+      </div>
 
       <div class="practice-grid">
         <section class="practice-panel" aria-labelledby="notes-heading">
           <h2 id="notes-heading">Notes</h2>
-          <p class="sequence">{props.exercise.notes.join(" - ")}</p>
+          <p class="sequence">{practice().notes.join(" - ")}</p>
         </section>
         <section class="practice-panel" aria-labelledby="fingering-heading">
           <h2 id="fingering-heading">Fingering</h2>
-          <p class="sequence">{selectedFingering().join(" - ")}</p>
+          <p class="sequence">{practice().fingering.join(" - ")}</p>
         </section>
       </div>
 
@@ -247,10 +270,10 @@ function ExerciseDetail(props: { exercise: Exercise }) {
         <div class="keyboard">
           <For each={keyboardKeys}>
             {(key) => {
-              const highlighted = () => isHighlightedKey(key, props.exercise.notes);
+              const highlighted = () => isHighlightedKey(key, practice().notes);
               const firstFingerForNote = () => {
-                const noteIndex = props.exercise.notes.indexOf(key.note);
-                return noteIndex >= 0 ? selectedFingering()[noteIndex] : undefined;
+                const noteIndex = practice().notes.indexOf(key.note);
+                return noteIndex >= 0 ? practice().fingering[noteIndex] : undefined;
               };
 
               return (

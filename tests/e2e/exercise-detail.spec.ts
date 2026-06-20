@@ -9,6 +9,9 @@ test("scale detail renders notes, fingering, keyboard, and persists last opened 
   await expect(page.getByRole("group", { name: "Practice keyboard" })).toBeVisible();
   await expect(page.getByTestId("key-C4")).toContainText("C");
   await expect(page.getByTestId("key-C4")).toContainText("1");
+  await page.getByLabel("2 octaves").check();
+  await expect(page.getByText("C - D - E - F - G - A - B - C - D - E - F - G - A - B - C")).toBeVisible();
+  await expect(page.getByTestId("key-C4")).toHaveAttribute("aria-label", "C4 highlighted");
   await expect(page.getByRole("heading", { name: "Compact metronome" })).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem("piano:last-exercise-id"))).toBe("c-major-scale");
 });
