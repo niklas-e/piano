@@ -1,6 +1,6 @@
 import { For } from "solid-js";
 import { css } from "solid-styled";
-import { isHighlightedKey, type PianoKey } from "./keyboard";
+import { isHighlightedKey, whiteIndexForKey, type PianoKey } from "./keyboard";
 
 export function KeyboardMinimap(props: {
   keys: readonly PianoKey[];
@@ -46,12 +46,6 @@ export function KeyboardMinimap(props: {
   const unit = 100 / whiteCount;
   const blackWidthRatio = 1.65 / 2.8;
 
-  const whiteIndexForKey = (keyIndex: number) => {
-    const whiteKeysBefore = props.keys.slice(0, keyIndex).filter((key) => key.type === "white").length;
-
-    return props.keys[keyIndex].type === "white" ? whiteKeysBefore : whiteKeysBefore - 0.3;
-  };
-
   return (
     <div class="minimap" data-testid="keyboard-minimap" role="img" aria-label="Exercise position on the full keyboard">
       <For each={props.keys}>
@@ -64,7 +58,7 @@ export function KeyboardMinimap(props: {
               class={`minimap-key ${key.type}${highlighted() ? " is-highlighted" : ""}`}
               data-testid={`minimap-key-${key.id}`}
               style={{
-                left: `${whiteIndexForKey(index()) * unit}%`,
+                left: `${whiteIndexForKey(props.keys, index()) * unit}%`,
                 width: `${unit * widthFactor}%`
               }}
             />

@@ -9,23 +9,6 @@ export type PianoKey = {
 
 const blackNotes = new Set<NoteName>(["C#", "D#", "F#", "G#", "A#"]);
 
-export function buildKeyboard(startOctave = 3, endOctave = 5): readonly PianoKey[] {
-  const keys: PianoKey[] = [];
-
-  for (let octave = startOctave; octave <= endOctave; octave += 1) {
-    for (const note of NOTE_NAMES) {
-      keys.push({
-        note,
-        octave,
-        type: blackNotes.has(note) ? "black" : "white",
-        id: `${note}${octave}`
-      });
-    }
-  }
-
-  return keys;
-}
-
 export function buildPianoKeyboard(): readonly PianoKey[] {
   const keys: PianoKey[] = [];
 
@@ -58,4 +41,13 @@ export function buildPianoKeyboard(): readonly PianoKey[] {
 
 export function isHighlightedKey(key: PianoKey, keyIds: readonly string[]): boolean {
   return keyIds.includes(key.id);
+}
+
+// White keys sit at integer slots (0, 1, 2, ...); black keys nudge back by 0.3
+// so they straddle the seam between the two neighbouring white keys. Shared by
+// the main keyboard and the minimap so their geometry can never drift apart.
+export function whiteIndexForKey(keys: readonly PianoKey[], keyIndex: number): number {
+  const whiteKeysBefore = keys.slice(0, keyIndex).filter((key) => key.type === "white").length;
+
+  return keys[keyIndex].type === "white" ? whiteKeysBefore : whiteKeysBefore - 0.3;
 }

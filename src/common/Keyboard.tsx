@@ -1,6 +1,6 @@
 import { For, Show, createEffect } from "solid-js";
 import { css } from "solid-styled";
-import { isHighlightedKey, type PianoKey } from "./keyboard";
+import { isHighlightedKey, whiteIndexForKey, type PianoKey } from "./keyboard";
 import type { Finger } from "./exercises";
 
 export function Keyboard(props: {
@@ -123,11 +123,7 @@ export function Keyboard(props: {
     hasScrolled = true;
   });
 
-  const whiteIndexForKey = (keyIndex: number) => {
-    const whiteKeysBefore = props.keys.slice(0, keyIndex).filter((key) => key.type === "white").length;
-
-    return props.keys[keyIndex].type === "white" ? whiteKeysBefore : whiteKeysBefore - 0.3;
-  };
+  const whiteIndex = (keyIndex: number) => whiteIndexForKey(props.keys, keyIndex);
 
   return (
     <div class="keyboard-scroll" role="group" aria-label="Practice keyboard" ref={scrollContainer}>
@@ -145,7 +141,7 @@ export function Keyboard(props: {
                 class={`piano-key ${key.type}${highlighted() ? " is-highlighted" : ""}`}
                 data-testid={`key-${key.id}`}
                 aria-label={`${key.note}${key.octave}${highlighted() ? " highlighted" : ""}`}
-                style={{ "--key-index": String(index()), "--white-index": String(whiteIndexForKey(index())) }}
+                style={{ "--key-index": String(index()), "--white-index": String(whiteIndex(index())) }}
               >
                 <Show when={key.type === "white"}>
                   <span class="key-label">{key.note}</span>
