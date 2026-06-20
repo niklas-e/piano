@@ -49,9 +49,23 @@ export function Keyboard(props: {
       z-index: 1;
     }
 
-    .piano-key.is-highlighted {
-      outline: 3px solid #2f251d;
-      outline-offset: -3px;
+    .piano-key.white.is-highlighted {
+      background-color: #f0b75e;
+      background-image: repeating-linear-gradient(
+        45deg,
+        transparent 0 7px,
+        rgba(23, 19, 15, 0.08) 7px 9px
+      );
+      border-color: #2f251d;
+    }
+
+    .piano-key.black.is-highlighted {
+      background-color: #8a4a1f;
+      background-image: repeating-linear-gradient(
+        45deg,
+        transparent 0 7px,
+        rgba(255, 250, 242, 0.16) 7px 9px
+      );
     }
 
     .piano-key strong {
