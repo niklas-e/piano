@@ -129,12 +129,6 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
       text-align: center;
     }
 
-    .practice-grid {
-      display: grid;
-      gap: 1rem;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    }
-
     .practice-panel {
       background: #fffaf2;
       border: 1px solid #dfd1bf;
@@ -226,16 +220,10 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
         </fieldset>
       </div>
 
-      <div class="practice-grid">
-        <section class="practice-panel" aria-labelledby="notes-heading">
-          <h2 id="notes-heading">Notes</h2>
-          <p class="sequence">{practice().notes.join(" - ")}</p>
-        </section>
-        <section class="practice-panel" aria-labelledby="fingering-heading">
-          <h2 id="fingering-heading">Fingering</h2>
-          <p class="sequence">{practice().fingering.join(" - ")}</p>
-        </section>
-      </div>
+      <section class="practice-panel" aria-labelledby="notes-heading">
+        <h2 id="notes-heading">Notes</h2>
+        <p class="sequence">{practice().notes.join(" - ")}</p>
+      </section>
 
       <Keyboard keys={keyboardKeys} keyIds={practice().keyIds} fingering={practice().fingering} />
 

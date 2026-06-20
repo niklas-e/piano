@@ -5,7 +5,6 @@ test("scale detail renders notes, fingering, keyboard, and persists last opened 
 
   await expect(page.getByRole("heading", { name: "C major scale" })).toBeVisible();
   await expect(page.getByText("C - D - E - F - G - A - B - C")).toBeVisible();
-  await expect(page.getByText("1 - 2 - 3 - 1 - 2 - 3 - 4 - 5")).toBeVisible();
   await expect(page.locator(".detail-chips")).not.toContainText(/one octave/i);
   await expect(page.getByRole("group", { name: "Practice keyboard" })).toBeVisible();
   await expect(page.getByTestId("key-C4")).toContainText("C");
@@ -26,7 +25,6 @@ test("scale detail renders notes, fingering, keyboard, and persists last opened 
   await page.getByRole("button", { name: "Increase range" }).click();
   await expect(page.getByText("2 octaves", { exact: true })).toBeVisible();
   await expect(page.getByText("C - D - E - F - G - A - B - C - D - E - F - G - A - B - C")).toBeVisible();
-  await expect(page.getByText("1 - 2 - 3 - 1 - 2 - 3 - 4 - 1 - 2 - 3 - 1 - 2 - 3 - 4 - 5")).toBeVisible();
   await expect(page.getByTestId("key-C6")).toHaveAttribute("aria-label", "C6 highlighted");
   await expect(page.locator(".metronome-card.compact")).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem("piano:last-exercise-id"))).toBe("c-major-scale");
@@ -57,7 +55,7 @@ test("hand selection updates visible fingering and persists", async ({ page }) =
   })).toBe(true);
 
   await leftHandRadio.check();
-  await expect(page.getByText("5 - 4 - 3 - 2 - 1 - 3 - 2 - 1")).toBeVisible();
+  await expect(page.getByTestId("key-C4")).toContainText("5");
   await page.reload();
   await expect(page.getByRole("radio", { name: "Left hand" })).toBeChecked();
 });
@@ -67,7 +65,6 @@ test("arpeggio detail renders chord-tone pattern", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "A minor arpeggio" })).toBeVisible();
   await expect(page.getByText("A - C - E - A")).toBeVisible();
-  await expect(page.getByText("1 - 2 - 3 - 5")).toBeVisible();
 });
 
 test("unknown exercise id renders fallback", async ({ page }) => {
