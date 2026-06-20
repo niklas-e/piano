@@ -1,4 +1,12 @@
+import { css } from "solid-styled";
+
 export function HomePage() {
+  css`
+    .hero {
+      max-width: 760px;
+    }
+  `;
+
   return (
     <section class="hero" aria-labelledby="home-heading">
       <p class="eyebrow">Lean piano practice tools</p>

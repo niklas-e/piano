@@ -1,4 +1,5 @@
 import { For, Show, createMemo, createSignal } from "solid-js";
+import { css } from "solid-styled";
 import { exercises, getExerciseById, type Exercise } from "../common/exercises";
 import {
   readExerciseTypeFilterPreference,
@@ -9,6 +10,58 @@ import {
 import { ExerciseCard } from "./ExerciseCard";
 
 export function ExercisesPage() {
+  css`
+    .continue-card {
+      background: #fffaf2;
+      border: 1px solid #dfd1bf;
+      border-radius: 1.25rem;
+      box-shadow: 0 18px 50px rgba(47, 37, 29, 0.08);
+      display: inline-flex;
+      font-weight: 800;
+      padding: 1rem 1.25rem;
+      text-decoration: none;
+    }
+
+    .catalog-controls {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem);
+    }
+
+    .catalog-controls label {
+      display: grid;
+      gap: 0.4rem;
+      font-weight: 800;
+    }
+
+    .catalog-controls input,
+    .catalog-controls select {
+      background: #fffaf2;
+      border: 1px solid #8e7b67;
+      border-radius: 0.8rem;
+      color: #17130f;
+      padding: 0.75rem 0.85rem;
+    }
+
+    .exercise-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    .empty-state {
+      border: 1px dashed #8e7b67;
+      border-radius: 1rem;
+      padding: 1rem;
+    }
+
+    @media (max-width: 640px) {
+      .catalog-controls {
+        grid-template-columns: 1fr;
+      }
+    }
+  `;
+
   const [search, setSearch] = createSignal("");
   const [typeFilter, setTypeFilter] = createSignal<ExerciseTypeFilter>(readExerciseTypeFilterPreference());
   const lastExercise = () => {

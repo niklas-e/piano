@@ -1,7 +1,43 @@
 import { type Exercise } from "../common/exercises";
+import { css } from "solid-styled";
 import { HighlightedText } from "../common/HighlightedText";
 
 export function ExerciseCard(props: { exercise: Exercise; query: string }) {
+  css`
+    .exercise-card {
+      background: #fffaf2;
+      border: 1px solid #dfd1bf;
+      border-radius: 1.25rem;
+      box-shadow: 0 18px 50px rgba(47, 37, 29, 0.08);
+      padding: 1rem;
+    }
+
+    .exercise-card h2 {
+      font-size: 1.4rem;
+      letter-spacing: -0.04em;
+      margin: 0.6rem 0;
+    }
+
+    .exercise-card h2 a {
+      text-decoration-thickness: 0.08em;
+      text-underline-offset: 0.18em;
+    }
+
+    .card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .card-meta span {
+      background: #efe1cf;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 0.22rem 0.5rem;
+    }
+  `;
+
   const typeLabel = () => (props.exercise.type === "scale" ? "Scale" : "Arpeggio");
 
   return (

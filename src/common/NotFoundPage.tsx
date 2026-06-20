@@ -1,4 +1,14 @@
+import { css } from "solid-styled";
+
 export function NotFoundPage() {
+  css`
+    .link-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+  `;
+
   return (
     <section aria-labelledby="not-found-heading">
       <h1 id="not-found-heading">Page not found</h1>
