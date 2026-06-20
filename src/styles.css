@@ -384,6 +384,50 @@ section h1 {
   animation: pulse-pop-alt var(--pulse-duration) ease-out 1;
 }
 
+.metronome-card.compact {
+  align-items: center;
+  border-radius: 0.9rem;
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: minmax(11rem, 1fr) auto auto;
+  padding: 0.75rem;
+}
+
+.metronome-card.compact .tempo-row {
+  gap: 0.45rem;
+  grid-template-columns: auto minmax(4.5rem, 6rem) auto;
+}
+
+.metronome-card.compact .tempo-input span {
+  font-size: 0.72rem;
+}
+
+.metronome-card.compact .tempo-input input {
+  font-size: 1rem;
+  padding: 0.45rem;
+}
+
+.compact-pulse {
+  display: grid;
+  font-weight: 800;
+  gap: 0.1rem;
+  justify-items: center;
+  min-width: 4.5rem;
+}
+
+.compact-pulse span {
+  font-size: 0.95rem;
+}
+
+.compact-pulse small {
+  color: #6f5e4f;
+  font-size: 0.72rem;
+}
+
+.metronome-card.compact .metronome-actions {
+  justify-content: end;
+}
+
 .metronome-actions {
   align-items: center;
   display: flex;
@@ -423,6 +467,12 @@ section h1 {
 
 @media (max-width: 520px) {
   .tempo-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .metronome-card.compact {
     grid-template-columns: 1fr;
   }
 }

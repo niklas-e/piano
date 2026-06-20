@@ -25,6 +25,13 @@ test("compact metronome works from exercise pages", async ({ page }) => {
   await page.goto("/exercises/c-major-scale");
 
   await expect(page.getByRole("heading", { name: "Compact metronome" })).toBeVisible();
+  const compactCard = page.locator(".metronome-card.compact");
+  await expect(compactCard).toBeVisible();
+  await expect(compactCard.locator(".pulse strong")).toHaveCount(0);
+
+  const compactBox = await compactCard.boundingBox();
+  expect(compactBox?.height ?? 0).toBeLessThan(180);
+
   await page.getByRole("button", { name: "Compact +5 BPM" }).click();
   await expect(page.getByText("85 BPM")).toBeVisible();
   await page.getByRole("button", { name: "Start compact metronome" }).click();

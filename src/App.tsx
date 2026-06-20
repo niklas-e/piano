@@ -365,15 +365,25 @@ function MetronomeControls(props: { variant: "full" | "compact" }) {
         </button>
       </div>
 
-      <div
-        class={`pulse ${isRunning() ? "is-running" : ""}${isRunning() ? pulseClass() : ""}`}
-        style={{ "--pulse-duration": `${pulseAnimationDuration()}ms` }}
-        aria-live="polite"
+      <Show
+        when={!isCompact()}
+        fallback={
+          <div class="compact-pulse" aria-live="polite">
+            <span>{bpm()} BPM</span>
+            <small>Beat {pulseCount()}</small>
+          </div>
+        }
       >
-        <span>{bpm()} BPM</span>
-        <strong>Visual pulse</strong>
-        <small>Beat {pulseCount()}</small>
-      </div>
+        <div
+          class={`pulse ${isRunning() ? "is-running" : ""}${isRunning() ? pulseClass() : ""}`}
+          style={{ "--pulse-duration": `${pulseAnimationDuration()}ms` }}
+          aria-live="polite"
+        >
+          <span>{bpm()} BPM</span>
+          <strong>Visual pulse</strong>
+          <small>Beat {pulseCount()}</small>
+        </div>
+      </Show>
 
       <div class="metronome-actions">
         <button type="button" class="primary-button" onClick={toggle} aria-label={isRunning() ? stopLabel() : startLabel()}>
