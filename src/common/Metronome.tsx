@@ -118,44 +118,43 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
       row-gap: 0.5rem;
     }
 
-    .compact-tempo {
-      align-items: center;
-      display: flex;
-      gap: 0.3rem;
+    .seg-control {
+      align-items: stretch;
+      background: #2f251d;
+      border-radius: 999px;
+      display: inline-flex;
+      overflow: hidden;
     }
 
-    .compact-tempo button {
+    .seg-control .seg-btn {
       background: #2f251d;
-      border: 1px solid #2f251d;
-      border-radius: 999px;
+      border: none;
       color: #fffaf2;
       cursor: pointer;
       font-weight: 900;
-      height: 1.9rem;
-      min-width: 1.9rem;
-      padding: 0 0.45rem;
+      min-width: 2.1rem;
+      padding: 0.4rem 0.6rem;
     }
 
-    .bpm-readout {
-      align-items: baseline;
+    .seg-control .seg-btn:hover {
+      background: #45372b;
+    }
+
+    .seg-control .seg-readout {
+      align-items: center;
+      background: #fffaf2;
+      border-radius: 999px;
       display: inline-flex;
-      gap: 0.25rem;
       justify-content: center;
-      min-width: 3.4rem;
+      margin: 0.18rem;
+      min-width: 2.8rem;
+      padding: 0.1rem 0.55rem;
     }
 
     .bpm-readout strong {
-      font-size: 1.35rem;
+      font-size: 1.3rem;
       font-weight: 900;
       letter-spacing: -0.04em;
-    }
-
-    .bpm-readout small {
-      color: #6f5e4f;
-      font-size: 0.68rem;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
     }
 
     .beat-dot {
@@ -182,11 +181,6 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
       margin-left: auto;
       min-height: 2rem;
       padding: 0.4rem 0.95rem;
-    }
-
-    .metronome-card.compact a {
-      font-weight: 800;
-      white-space: nowrap;
     }
 
     @keyframes pulse-pop {
@@ -383,21 +377,20 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
       }
     >
       <div class="metronome-card compact">
-        <div class="compact-tempo" role="group" aria-label="Tempo in BPM">
-          <button type="button" onClick={() => updateBpm(bpm() - 5)} aria-label="-5 BPM">
+        <div class="seg-control" role="group" aria-label="Tempo in BPM">
+          <button type="button" class="seg-btn" onClick={() => updateBpm(bpm() - 5)} aria-label="-5 BPM">
             -5
           </button>
-          <button type="button" onClick={() => updateBpm(bpm() - 1)} aria-label="-1 BPM">
+          <button type="button" class="seg-btn" onClick={() => updateBpm(bpm() - 1)} aria-label="-1 BPM">
             -
           </button>
-          <span class="bpm-readout">
+          <span class="seg-readout bpm-readout">
             <strong>{bpm()}</strong>
-            <small>BPM</small>
           </span>
-          <button type="button" onClick={() => updateBpm(bpm() + 1)} aria-label="+1 BPM">
+          <button type="button" class="seg-btn" onClick={() => updateBpm(bpm() + 1)} aria-label="+1 BPM">
             +
           </button>
-          <button type="button" onClick={() => updateBpm(bpm() + 5)} aria-label="+5 BPM">
+          <button type="button" class="seg-btn" onClick={() => updateBpm(bpm() + 5)} aria-label="+5 BPM">
             +5
           </button>
         </div>
@@ -417,8 +410,6 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
         >
           {isRunning() ? "Stop" : "Start"}
         </button>
-
-        <a href="/metronome">Open full metronome</a>
       </div>
     </Show>
   );
