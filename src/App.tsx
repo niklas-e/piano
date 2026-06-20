@@ -169,9 +169,6 @@ function ExerciseCard(props: { exercise: Exercise; query: string }) {
         <span>
           <HighlightedText text={props.exercise.quality} query={props.query} />
         </span>
-        <span>
-          <HighlightedText text={props.exercise.range} query={props.query} />
-        </span>
       </div>
       <h2>
         <a href={`/exercises/${props.exercise.id}`}>
@@ -258,8 +255,8 @@ function ExercisePage(props: { id: string }) {
 
 function ExerciseDetail(props: { exercise: Exercise }) {
   const [hand, setHand] = createSignal<Hand>(readHandPreference());
-  const [range, setRange] = createSignal<PracticeRange>("1-octave");
-  const keyboardKeys = buildKeyboard(3, 5);
+  const [range, setRange] = createSignal<PracticeRange>(1);
+  const keyboardKeys = buildKeyboard(3, 6);
   const practice = createMemo(() => derivePracticeRange(props.exercise, hand(), range()));
   const whiteIndexForKey = (keyIndex: number) => {
     const whiteKeysBefore = keyboardKeys.slice(0, keyIndex).filter((key) => key.type === "white").length;
@@ -277,6 +274,10 @@ function ExerciseDetail(props: { exercise: Exercise }) {
     writeHandPreference(nextHand);
   };
 
+  const updateRange = (direction: -1 | 1) => {
+    setRange((currentRange) => Math.min(2, Math.max(1, currentRange + direction)) as PracticeRange);
+  };
+
   return (
     <section aria-labelledby="exercise-heading" class="stack">
       <div class="exercise-header">
@@ -286,7 +287,6 @@ function ExerciseDetail(props: { exercise: Exercise }) {
         <div class="detail-chips" aria-label="Exercise details">
           <span>{props.exercise.tonic}</span>
           <span>{props.exercise.quality}</span>
-          <span>{props.exercise.range}</span>
         </div>
       </div>
 
@@ -317,28 +317,17 @@ function ExerciseDetail(props: { exercise: Exercise }) {
           </div>
         </fieldset>
 
-        <fieldset class="range-select">
+        <fieldset class="range-stepper">
           <legend>Range</legend>
-          <label>
-            <input
-              type="radio"
-              name="practice-range"
-              value="1-octave"
-              checked={range() === "1-octave"}
-              onChange={() => setRange("1-octave")}
-            />
-            <span>1 octave</span>
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="practice-range"
-              value="2-octaves"
-              checked={range() === "2-octaves"}
-              onChange={() => setRange("2-octaves")}
-            />
-            <span>2 octaves</span>
-          </label>
+          <div class="stepper-control">
+            <button type="button" aria-label="Decrease range" onClick={() => updateRange(-1)} disabled={range() === 1}>
+              -
+            </button>
+            <span aria-live="polite">{practice().label}</span>
+            <button type="button" aria-label="Increase range" onClick={() => updateRange(1)} disabled={range() === 2}>
+              +
+            </button>
+          </div>
         </fieldset>
       </div>
 
@@ -357,9 +346,9 @@ function ExerciseDetail(props: { exercise: Exercise }) {
         <div class="keyboard">
           <For each={keyboardKeys}>
             {(key, index) => {
-              const highlighted = () => isHighlightedKey(key, practice().notes);
-              const firstFingerForNote = () => {
-                const noteIndex = practice().notes.indexOf(key.note);
+              const highlighted = () => isHighlightedKey(key, practice().keyIds);
+              const firstFingerForKey = () => {
+                const noteIndex = practice().keyIds.indexOf(key.id);
                 return noteIndex >= 0 ? practice().fingering[noteIndex] : undefined;
               };
 
@@ -373,7 +362,7 @@ function ExerciseDetail(props: { exercise: Exercise }) {
                   <Show when={key.type === "white"}>
                     <span class="key-label">{key.note}</span>
                   </Show>
-                  <Show when={highlighted() && firstFingerForNote()}>
+                  <Show when={highlighted() && firstFingerForKey()}>
                     {(finger) => <strong>{finger()}</strong>}
                   </Show>
                 </div>

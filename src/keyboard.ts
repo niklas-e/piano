@@ -26,6 +26,6 @@ export function buildKeyboard(startOctave = 3, endOctave = 5): readonly PianoKey
   return keys;
 }
 
-export function isHighlightedKey(key: PianoKey, notes: readonly NoteName[]): boolean {
-  return notes.includes(key.note);
+export function isHighlightedKey(key: PianoKey, keyIds: readonly string[]): boolean {
+  return keyIds.includes(key.id);
 }

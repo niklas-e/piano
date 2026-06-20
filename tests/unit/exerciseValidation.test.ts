@@ -27,7 +27,6 @@ test("validation rejects invalid ids and mismatched fingering", () => {
     title: "Bad scale",
     tonic: "C",
     quality: "major",
-    range: "one octave",
     notes: ["C", "D", "E"],
     fingering: {
       right: [1, 2],

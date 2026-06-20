@@ -11,11 +11,13 @@ test("buildKeyboard creates complete octave ranges", () => {
   assert.deepEqual(keys.at(-1), { note: "B", octave: 4, type: "white", id: "B4" });
 });
 
-test("isHighlightedKey matches exercise pitch classes", () => {
+test("isHighlightedKey matches exact keyboard key ids", () => {
   const keys = buildKeyboard(4, 4);
   const cKey = keys.find((key) => key.id === "C4");
+  const dKey = keys.find((key) => key.id === "D4");
   const cSharpKey = keys.find((key) => key.id === "C#4");
 
-  assert.equal(cKey ? isHighlightedKey(cKey, ["C", "E", "G", "C"]) : false, true);
-  assert.equal(cSharpKey ? isHighlightedKey(cSharpKey, ["C", "E", "G", "C"]) : true, false);
+  assert.equal(cKey ? isHighlightedKey(cKey, ["C4", "E4", "G4", "C5"]) : false, true);
+  assert.equal(dKey ? isHighlightedKey(dKey, ["C4", "E4", "G4", "C5"]) : true, false);
+  assert.equal(cSharpKey ? isHighlightedKey(cSharpKey, ["C4", "E4", "G4", "C5"]) : true, false);
 });

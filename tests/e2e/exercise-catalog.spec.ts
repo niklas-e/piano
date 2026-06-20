@@ -7,6 +7,7 @@ test("catalog renders exercises as a plain list", async ({ page }) => {
   await expect(page.getByRole("link", { name: "C major scale" })).toHaveAttribute("href", "/exercises/c-major-scale");
   await expect(page.getByRole("link", { name: "A minor arpeggio" })).toHaveAttribute("href", "/exercises/a-minor-arpeggio");
   await expect(page.getByText("ABRSM", { exact: false })).toHaveCount(0);
+  await expect(page.locator(".exercise-card", { has: page.getByRole("link", { name: "C major scale" }) }).locator(".card-meta")).not.toContainText(/one octave/i);
 });
 
 test("catalog search filters by title and tonic", async ({ page }) => {

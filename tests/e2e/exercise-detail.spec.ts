@@ -6,9 +6,12 @@ test("scale detail renders notes, fingering, keyboard, and persists last opened 
   await expect(page.getByRole("heading", { name: "C major scale" })).toBeVisible();
   await expect(page.getByText("C - D - E - F - G - A - B - C")).toBeVisible();
   await expect(page.getByText("1 - 2 - 3 - 1 - 2 - 3 - 4 - 5")).toBeVisible();
+  await expect(page.locator(".detail-chips")).not.toContainText(/one octave/i);
   await expect(page.getByRole("group", { name: "Practice keyboard" })).toBeVisible();
   await expect(page.getByTestId("key-C4")).toContainText("C");
   await expect(page.getByTestId("key-C4")).toContainText("1");
+  await expect(page.getByTestId("key-C4")).toHaveAttribute("aria-label", "C4 highlighted");
+  await expect(page.getByTestId("key-C6")).not.toHaveAttribute("aria-label", "C6 highlighted");
   await expect(page.getByTestId("key-C#4")).toBeVisible();
   await expect(page.getByTestId("key-C#4").locator(".key-label")).toHaveCount(0);
   await expect(page.getByTestId("key-C#4")).not.toContainText("C#");
@@ -20,11 +23,23 @@ test("scale detail renders notes, fingering, keyboard, and persists last opened 
   expect(blackBox?.width ?? 999).toBeLessThan(whiteBox?.width ?? 0);
   expect(blackBox?.height ?? 999).toBeLessThan(whiteBox?.height ?? 0);
 
-  await page.getByLabel("2 octaves").check();
+  await page.getByRole("button", { name: "Increase range" }).click();
+  await expect(page.getByText("2 octaves", { exact: true })).toBeVisible();
   await expect(page.getByText("C - D - E - F - G - A - B - C - D - E - F - G - A - B - C")).toBeVisible();
-  await expect(page.getByTestId("key-C4")).toHaveAttribute("aria-label", "C4 highlighted");
+  await expect(page.getByText("1 - 2 - 3 - 1 - 2 - 3 - 4 - 1 - 2 - 3 - 1 - 2 - 3 - 4 - 5")).toBeVisible();
+  await expect(page.getByTestId("key-C6")).toHaveAttribute("aria-label", "C6 highlighted");
   await expect(page.getByRole("heading", { name: "Compact metronome" })).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem("piano:last-exercise-id"))).toBe("c-major-scale");
+});
+
+test("highlighted black keys hide note labels and show fingering", async ({ page }) => {
+  await page.goto("/exercises/g-major-scale");
+
+  const fSharpKey = page.getByTestId("key-F#5");
+  await expect(fSharpKey).toHaveAttribute("aria-label", "F#5 highlighted");
+  await expect(fSharpKey.locator(".key-label")).toHaveCount(0);
+  await expect(fSharpKey).not.toContainText("F#");
+  await expect(fSharpKey.locator("strong")).toHaveText("4");
 });
 
 test("hand selection updates visible fingering and persists", async ({ page }) => {

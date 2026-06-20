@@ -11,7 +11,6 @@ export type Exercise = {
   title: string;
   tonic: NoteName;
   quality: string;
-  range: string;
   notes: readonly NoteName[];
   fingering: Record<Hand, readonly Finger[]>;
   description?: string;
@@ -68,7 +67,6 @@ function scale(
     title,
     tonic,
     quality,
-    range: "one octave",
     notes,
     fingering,
     description: "Practice evenly with relaxed hand shape before increasing the tempo."
@@ -82,7 +80,6 @@ function arpeggio(id: string, title: string, tonic: NoteName, quality: string, n
     title,
     tonic,
     quality,
-    range: "one octave",
     notes,
     fingering: arpeggioFingering,
     description: "Keep the wrist loose and listen for an even chord-tone shape."
