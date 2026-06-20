@@ -24,18 +24,17 @@ test("full metronome starts, stops, adjusts BPM, and persists tempo", async ({ p
 test("compact metronome works from exercise pages", async ({ page }) => {
   await page.goto("/exercises/c-major-scale");
 
-  await expect(page.getByRole("heading", { name: "Compact metronome" })).toBeVisible();
   const compactCard = page.locator(".metronome-card.compact");
   await expect(compactCard).toBeVisible();
-  await expect(compactCard.locator(".pulse strong")).toHaveCount(0);
+  await expect(compactCard.locator(".pulse")).toHaveCount(0);
 
   const compactBox = await compactCard.boundingBox();
   expect(compactBox?.height ?? 0).toBeLessThan(180);
 
-  await page.getByRole("button", { name: "Compact +5 BPM" }).click();
-  await expect(page.getByText("85 BPM")).toBeVisible();
-  await page.getByRole("button", { name: "Start compact metronome" }).click();
-  await expect(page.getByRole("button", { name: "Stop compact metronome" })).toHaveText("Stop compact metronome");
+  await page.getByRole("button", { name: "+5 BPM" }).click();
+  await expect(compactCard.locator(".bpm-readout")).toContainText("85");
+  await page.getByRole("button", { name: "Start metronome" }).click();
+  await expect(page.getByRole("button", { name: "Stop metronome" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Open full metronome" })).toHaveAttribute("href", "/metronome");
 });
 

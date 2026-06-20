@@ -105,56 +105,86 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
       margin: 0;
     }
 
-    /* ---- Compact variant (slimmed in a later commit) ---- */
+    /* ---- Compact variant: slim pill with static BPM readout ---- */
     .metronome-card.compact {
       align-items: center;
-      border-radius: 0.9rem;
-      display: grid;
-      gap: 0.65rem;
-      grid-template-columns: minmax(11rem, 1fr) auto auto;
-      padding: 0.75rem;
+      border-radius: 999px;
+      column-gap: 0.85rem;
+      display: flex;
+      flex-wrap: wrap;
+      padding: 0.5rem 0.85rem;
+      row-gap: 0.5rem;
     }
 
-    .tempo-row {
-      align-items: end;
-      display: grid;
-      gap: 0.75rem;
-      grid-template-columns: auto minmax(8rem, 1fr) auto;
+    .compact-tempo {
+      align-items: center;
+      display: flex;
+      gap: 0.3rem;
     }
 
-    .metronome-card.compact .tempo-row {
-      gap: 0.45rem;
-      grid-template-columns: auto minmax(4.5rem, 6rem) auto;
+    .compact-tempo button {
+      background: #2f251d;
+      border: 1px solid #2f251d;
+      border-radius: 999px;
+      color: #fffaf2;
+      cursor: pointer;
+      font-weight: 900;
+      height: 1.9rem;
+      min-width: 1.9rem;
+      padding: 0 0.45rem;
     }
 
-    .metronome-card.compact .tempo-input span {
-      font-size: 0.72rem;
+    .bpm-readout {
+      align-items: baseline;
+      display: inline-flex;
+      gap: 0.25rem;
+      justify-content: center;
+      min-width: 3.4rem;
     }
 
-    .metronome-card.compact .tempo-input input {
-      font-size: 1rem;
-      padding: 0.45rem;
+    .bpm-readout strong {
+      font-size: 1.35rem;
+      font-weight: 900;
+      letter-spacing: -0.04em;
     }
 
-    .metronome-card.compact .metronome-actions {
-      justify-content: end;
-    }
-
-    .compact-pulse {
-      display: grid;
-      font-weight: 800;
-      gap: 0.1rem;
-      justify-items: center;
-      min-width: 4.5rem;
-    }
-
-    .compact-pulse span {
-      font-size: 0.95rem;
-    }
-
-    .compact-pulse small {
+    .bpm-readout small {
       color: #6f5e4f;
-      font-size: 0.72rem;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .beat-dot {
+      background: #cdbba6;
+      border-radius: 999px;
+      flex: none;
+      height: 0.85rem;
+      width: 0.85rem;
+    }
+
+    .beat-dot.is-running {
+      background: #2f251d;
+    }
+
+    .beat-dot.is-running.pulse-odd {
+      animation: pulse-pop var(--pulse-duration) ease-out 1;
+    }
+
+    .beat-dot.is-running.pulse-even {
+      animation: pulse-pop-alt var(--pulse-duration) ease-out 1;
+    }
+
+    .metronome-card.compact .primary-button {
+      margin-left: auto;
+      min-height: 2rem;
+      padding: 0.4rem 0.95rem;
+    }
+
+    .metronome-card.compact a {
+      font-weight: 800;
+      white-space: nowrap;
     }
 
     @keyframes pulse-pop {
@@ -177,8 +207,14 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
 
     @media (prefers-reduced-motion: reduce) {
       .pulse.is-running.pulse-odd,
-      .pulse.is-running.pulse-even {
+      .pulse.is-running.pulse-even,
+      .beat-dot.is-running.pulse-odd,
+      .beat-dot.is-running.pulse-even {
         animation: none;
+      }
+
+      .pulse.is-running.pulse-odd,
+      .pulse.is-running.pulse-even {
         outline: 3px solid #d46a2c;
       }
     }
@@ -186,12 +222,6 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
     @media (max-width: 520px) {
       .tempo-bar {
         gap: 0.35rem;
-      }
-    }
-
-    @media (max-width: 640px) {
-      .metronome-card.compact {
-        grid-template-columns: 1fr;
       }
     }
   `;
@@ -291,43 +321,42 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
       }
     >
       <div class="metronome-card compact">
-        <div class="tempo-row">
-          <button type="button" onClick={() => updateBpm(bpm() - 5)} aria-label="Compact -5 BPM">
+        <div class="compact-tempo" role="group" aria-label="Tempo in BPM">
+          <button type="button" onClick={() => updateBpm(bpm() - 5)} aria-label="-5 BPM">
             -5
           </button>
-          <label class="tempo-input">
-            <span>Tempo in BPM</span>
-            <input
-              inputmode="numeric"
-              min="30"
-              max="240"
-              type="number"
-              value={bpm()}
-              onChange={(event) => updateBpm(Number(event.currentTarget.value))}
-            />
-          </label>
-          <button type="button" onClick={() => updateBpm(bpm() + 5)} aria-label="Compact +5 BPM">
+          <button type="button" onClick={() => updateBpm(bpm() - 1)} aria-label="-1 BPM">
+            -
+          </button>
+          <span class="bpm-readout">
+            <strong>{bpm()}</strong>
+            <small>BPM</small>
+          </span>
+          <button type="button" onClick={() => updateBpm(bpm() + 1)} aria-label="+1 BPM">
+            +
+          </button>
+          <button type="button" onClick={() => updateBpm(bpm() + 5)} aria-label="+5 BPM">
             +5
           </button>
         </div>
 
-        <div class="compact-pulse" aria-live="polite">
-          <span>{bpm()} BPM</span>
-          <small>Beat {pulseCount()}</small>
-        </div>
+        <span
+          class={`beat-dot ${isRunning() ? "is-running" : ""}${isRunning() ? pulseClass() : ""}`}
+          style={{ "--pulse-duration": `${pulseAnimationDuration()}ms` }}
+          aria-label={`Beat ${pulseCount()}`}
+          aria-live="polite"
+        />
 
-        <div class="metronome-actions">
-          <button
-            type="button"
-            class="primary-button"
-            onClick={toggle}
-            aria-label={isRunning() ? "Stop compact metronome" : "Start compact metronome"}
-          >
-            {isRunning() ? "Stop compact metronome" : "Start compact metronome"}
-          </button>
-          <Show when={audioError()}>{(message) => <p class="audio-message">{message()}</p>}</Show>
-          <a href="/metronome">Open full metronome</a>
-        </div>
+        <button
+          type="button"
+          class="primary-button"
+          onClick={toggle}
+          aria-label={isRunning() ? "Stop metronome" : "Start metronome"}
+        >
+          {isRunning() ? "Stop" : "Start"}
+        </button>
+
+        <a href="/metronome">Open full metronome</a>
       </div>
     </Show>
   );

@@ -135,16 +135,14 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     }
 
-    .practice-panel,
-    .compact-metronome {
+    .practice-panel {
       background: #fffaf2;
       border: 1px solid #dfd1bf;
       border-radius: 1rem;
       padding: 0.85rem;
     }
 
-    .practice-panel h2,
-    .compact-metronome h2 {
+    .practice-panel h2 {
       margin-top: 0;
     }
 
@@ -241,10 +239,7 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
 
       <Keyboard keys={keyboardKeys} keyIds={practice().keyIds} fingering={practice().fingering} />
 
-      <section class="compact-metronome" aria-labelledby="compact-metronome-heading">
-        <h2 id="compact-metronome-heading">Compact metronome</h2>
-        <MetronomeControls variant="compact" />
-      </section>
+      <MetronomeControls variant="compact" />
     </section>
   );
 }

@@ -28,7 +28,7 @@ test("scale detail renders notes, fingering, keyboard, and persists last opened 
   await expect(page.getByText("C - D - E - F - G - A - B - C - D - E - F - G - A - B - C")).toBeVisible();
   await expect(page.getByText("1 - 2 - 3 - 1 - 2 - 3 - 4 - 1 - 2 - 3 - 1 - 2 - 3 - 4 - 5")).toBeVisible();
   await expect(page.getByTestId("key-C6")).toHaveAttribute("aria-label", "C6 highlighted");
-  await expect(page.getByRole("heading", { name: "Compact metronome" })).toBeVisible();
+  await expect(page.locator(".metronome-card.compact")).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem("piano:last-exercise-id"))).toBe("c-major-scale");
 });
 
