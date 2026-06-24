@@ -3,6 +3,7 @@ export type Route =
   | { name: "exercises" }
   | { name: "exercise"; id: string }
   | { name: "metronome" }
+  | { name: "sight-reading" }
   | { name: "notFound" };
 
 export type RouteHeader = {
@@ -30,6 +31,10 @@ export function parsePathname(pathname: string): Route {
     return { name: "metronome" };
   }
 
+  if (normalizedPathname === "/sight-reading") {
+    return { name: "sight-reading" };
+  }
+
   return { name: "notFound" };
 }
 
@@ -40,6 +45,8 @@ export function getRouteHeader(route: Route): RouteHeader {
       return { href: "/exercises", title: "Exercises" };
     case "metronome":
       return { href: "/metronome", title: "Metronome" };
+    case "sight-reading":
+      return { href: "/sight-reading", title: "Sight Reading" };
     case "home":
     case "notFound":
       return { href: "/", title: "Piano Practice" };
@@ -53,6 +60,10 @@ export function isPrimaryNavigationRoute(route: Route, href: string): boolean {
 
   if (href === "/metronome") {
     return route.name === "metronome";
+  }
+
+  if (href === "/sight-reading") {
+    return route.name === "sight-reading";
   }
 
   return false;

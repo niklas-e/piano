@@ -13,6 +13,12 @@ const sections = [
     description: "Practice with a steady pulse and adjustable tempo.",
     meta: "Tempo practice",
     href: "/metronome"
+  },
+  {
+    title: "Sight Reading",
+    description: "Identify notes on the staff against the clock.",
+    meta: "Note recognition",
+    href: "/sight-reading"
   }
 ] as const;
 

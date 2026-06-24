@@ -5,7 +5,8 @@ import { getRouteHeader, isPrimaryNavigationRoute, type Route } from "./routes";
 
 const primaryNavigationItems = [
   { href: "/exercises", label: "Exercises" },
-  { href: "/metronome", label: "Metronome" }
+  { href: "/metronome", label: "Metronome" },
+  { href: "/sight-reading", label: "Sight Reading" }
 ] as const;
 
 export function AppHeader(props: { route: Route; navigate: (href: string) => (event: MouseEvent) => void }) {

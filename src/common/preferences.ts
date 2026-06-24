@@ -1,4 +1,5 @@
 import type { ExerciseType, Hand } from "./exercises.ts";
+import { CLEFS, DURATION_OPTIONS, type Clef } from "./sightReading.ts";
 
 export const MIN_BPM = 30;
 export const MAX_BPM = 240;
@@ -15,11 +16,18 @@ const keys = {
   bpm: "piano:bpm",
   exerciseTypeFilter: "piano:exercise-type-filter",
   hand: "piano:hand",
-  lastExerciseId: "piano:last-exercise-id"
+  lastExerciseId: "piano:last-exercise-id",
+  sightReadingClef: "piano:sight-reading-clef",
+  sightReadingDuration: "piano:sight-reading-duration"
 } as const;
+
+export const DEFAULT_SIGHT_READING_CLEF: Clef = "treble";
+export const DEFAULT_SIGHT_READING_DURATION = 60;
 
 const exerciseTypeFilters = new Set<ExerciseTypeFilter>(["all", "scale", "arpeggio"]);
 const hands = new Set<Hand>(["right", "left"]);
+const clefs = new Set<Clef>(CLEFS);
+const durations = new Set<number>(DURATION_OPTIONS.map((option) => option.seconds));
 const urlSafeIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export function readBpmPreference(storage = getBrowserStorage()): number {
@@ -67,6 +75,27 @@ export function writeLastExerciseIdPreference(id: string, storage = getBrowserSt
   writeStorageItem(storage, keys.lastExerciseId, id);
 }
 
+export function readSightReadingClefPreference(storage = getBrowserStorage()): Clef {
+  const rawValue = readStorageItem(storage, keys.sightReadingClef);
+
+  return isClef(rawValue) ? rawValue : DEFAULT_SIGHT_READING_CLEF;
+}
+
+export function writeSightReadingClefPreference(value: Clef, storage = getBrowserStorage()): void {
+  writeStorageItem(storage, keys.sightReadingClef, isClef(value) ? value : DEFAULT_SIGHT_READING_CLEF);
+}
+
+export function readSightReadingDurationPreference(storage = getBrowserStorage()): number {
+  const rawValue = readStorageItem(storage, keys.sightReadingDuration);
+  const seconds = rawValue === null || rawValue === undefined ? NaN : Number(rawValue);
+
+  return durations.has(seconds) ? seconds : DEFAULT_SIGHT_READING_DURATION;
+}
+
+export function writeSightReadingDurationPreference(seconds: number, storage = getBrowserStorage()): void {
+  writeStorageItem(storage, keys.sightReadingDuration, String(durations.has(seconds) ? seconds : DEFAULT_SIGHT_READING_DURATION));
+}
+
 function isValidBpm(value: number): boolean {
   return Number.isInteger(value) && value >= MIN_BPM && value <= MAX_BPM;
 }
@@ -77,6 +106,10 @@ function isExerciseTypeFilter(value: unknown): value is ExerciseTypeFilter {
 
 function isHand(value: unknown): value is Hand {
   return typeof value === "string" && hands.has(value as Hand);
+}
+
+function isClef(value: unknown): value is Clef {
+  return typeof value === "string" && clefs.has(value as Clef);
 }
 
 function getBrowserStorage(): StorageLike | undefined {

@@ -11,6 +11,9 @@ importers:
       '@phosphor-icons/webcomponents':
         specifier: 2.1.5
         version: 2.1.5
+      abcjs:
+        specifier: 6.6.3
+        version: 6.6.3
       solid-js:
         specifier: 1.9.13
         version: 1.9.13
@@ -301,6 +304,9 @@ packages:
 
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
+
+  abcjs@6.6.3:
+    resolution: {integrity: sha512-BerGJCY8+pvJV1+VxZn1Y/VNcuSAk8BysCbBICY0W8fgE5g4W6sA/zB5pKxcgqzY5/gObh8ugl++4ZoaTqUCkw==}
 
   acorn@8.17.0:
     resolution: {integrity: sha512-xRQbDb9BnwDafYNn6Vwl839DYVjqXYb1XVGtWAZ1kcDc6iwAL4hg3B1dZlRiuENFeO2H53gFG3in621AdERVAg==}
@@ -952,6 +958,8 @@ snapshots:
       undici-types: 7.24.6
 
   '@types/trusted-types@2.0.7': {}
+
+  abcjs@6.6.3: {}
 
   acorn@8.17.0: {}
 

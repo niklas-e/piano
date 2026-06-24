@@ -7,6 +7,7 @@ import { HomePage } from "./home/HomePage";
 import { ExercisesPage } from "./exercises/ExercisesPage";
 import { ExercisePage } from "./exercise/ExercisePage";
 import { MetronomePage } from "./metronome/MetronomePage";
+import { SightReadingPage } from "./sightreading/SightReadingPage";
 import { NotFoundPage } from "./common/NotFoundPage";
 
 export default function App() {
@@ -64,6 +65,9 @@ export default function App() {
           </Match>
           <Match when={route().name === "metronome"}>
             <MetronomePage />
+          </Match>
+          <Match when={route().name === "sight-reading"}>
+            <SightReadingPage />
           </Match>
           <Match when={route().name === "notFound"}>
             <NotFoundPage />
