@@ -1,5 +1,5 @@
 import type { ExerciseType, Hand } from "./exercises.ts";
-import { CLEFS, DURATION_OPTIONS, type Clef } from "./sightReading.ts";
+import { CLEF_SETTINGS, DURATION_OPTIONS, type ClefSetting } from "./sightReading.ts";
 
 export const MIN_BPM = 30;
 export const MAX_BPM = 240;
@@ -21,12 +21,12 @@ const keys = {
   sightReadingDuration: "piano:sight-reading-duration"
 } as const;
 
-export const DEFAULT_SIGHT_READING_CLEF: Clef = "treble";
+export const DEFAULT_SIGHT_READING_CLEF: ClefSetting = "treble";
 export const DEFAULT_SIGHT_READING_DURATION = 60;
 
 const exerciseTypeFilters = new Set<ExerciseTypeFilter>(["all", "scale", "arpeggio"]);
 const hands = new Set<Hand>(["right", "left"]);
-const clefs = new Set<Clef>(CLEFS);
+const clefs = new Set<ClefSetting>(CLEF_SETTINGS);
 const durations = new Set<number>(DURATION_OPTIONS.map((option) => option.seconds));
 const urlSafeIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -75,13 +75,13 @@ export function writeLastExerciseIdPreference(id: string, storage = getBrowserSt
   writeStorageItem(storage, keys.lastExerciseId, id);
 }
 
-export function readSightReadingClefPreference(storage = getBrowserStorage()): Clef {
+export function readSightReadingClefPreference(storage = getBrowserStorage()): ClefSetting {
   const rawValue = readStorageItem(storage, keys.sightReadingClef);
 
   return isClef(rawValue) ? rawValue : DEFAULT_SIGHT_READING_CLEF;
 }
 
-export function writeSightReadingClefPreference(value: Clef, storage = getBrowserStorage()): void {
+export function writeSightReadingClefPreference(value: ClefSetting, storage = getBrowserStorage()): void {
   writeStorageItem(storage, keys.sightReadingClef, isClef(value) ? value : DEFAULT_SIGHT_READING_CLEF);
 }
 
@@ -108,8 +108,8 @@ function isHand(value: unknown): value is Hand {
   return typeof value === "string" && hands.has(value as Hand);
 }
 
-function isClef(value: unknown): value is Clef {
-  return typeof value === "string" && clefs.has(value as Clef);
+function isClef(value: unknown): value is ClefSetting {
+  return typeof value === "string" && clefs.has(value as ClefSetting);
 }
 
 function getBrowserStorage(): StorageLike | undefined {

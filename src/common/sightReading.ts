@@ -1,8 +1,10 @@
 export type Clef = "treble" | "bass";
+export type ClefSetting = Clef | "both";
 export type Accidental = "natural" | "sharp" | "flat";
 export type Letter = "C" | "D" | "E" | "F" | "G" | "A" | "B";
 export type Note = { letter: Letter; octave: number; accidental: Accidental };
-export type WrongAnswer = { shown: string; picked: string };
+export type AnswerRow = 1 | 2 | 3;
+export type WrongAnswer = { note: Note; clef: Clef; picked: string };
 
 export type DurationOption = { label: string; seconds: number };
 
@@ -15,6 +17,7 @@ export const DURATION_OPTIONS: readonly DurationOption[] = [
 ] as const;
 
 export const CLEFS: readonly Clef[] = ["treble", "bass"] as const;
+export const CLEF_SETTINGS: readonly ClefSetting[] = ["treble", "bass", "both"] as const;
 
 // Comfortable single-octave-ish reading ranges, ledger lines kept minimal.
 // A staff slot is just a letter + octave; the accidental is chosen per draw.
@@ -55,6 +58,28 @@ export function randomNote(clef: Clef, random: () => number = Math.random): Note
   const accidentals = validAccidentals(slot.letter);
   const accidental = accidentals[Math.floor(random() * accidentals.length)];
   return { letter: slot.letter, octave: slot.octave, accidental };
+}
+
+export function randomClef(setting: ClefSetting, random: () => number = Math.random): Clef {
+  if (setting === "both") {
+    return random() < 0.5 ? "treble" : "bass";
+  }
+  return setting;
+}
+
+export function accidentalRow(accidental: Accidental): AnswerRow {
+  return accidental === "sharp" ? 1 : accidental === "flat" ? 3 : 2;
+}
+
+/**
+ * Two answer rows to show: the naturals row plus the row that contains the
+ * correct answer (a random accidental row when the note itself is natural).
+ * The staff already reveals sharp vs flat, so this leaks nothing.
+ */
+export function visibleRows(note: Note, random: () => number = Math.random): Set<AnswerRow> {
+  const rows = new Set<AnswerRow>([2]);
+  rows.add(note.accidental === "natural" ? (random() < 0.5 ? 1 : 3) : accidentalRow(note.accidental));
+  return rows;
 }
 
 export function noteToAbc(note: Note): string {

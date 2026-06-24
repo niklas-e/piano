@@ -3,13 +3,17 @@ import { css } from "solid-styled";
 import { Staff } from "../common/Staff";
 import {
   ANSWER_OPTIONS,
-  CLEFS,
+  CLEF_SETTINGS,
   DURATION_OPTIONS,
   accuracyPercent,
   formatClock,
   noteName,
+  randomClef,
   randomNote,
+  visibleRows,
+  type AnswerRow,
   type Clef,
+  type ClefSetting,
   type Note,
   type WrongAnswer
 } from "../common/sightReading";
@@ -21,8 +25,15 @@ import {
 } from "../common/preferences";
 
 type Phase = "setup" | "playing" | "results";
+type Prompt = { note: Note; clef: Clef; rows: Set<AnswerRow> };
 
-const clefLabels: Record<Clef, string> = { treble: "Treble", bass: "Bass" };
+const clefLabels: Record<ClefSetting, string> = { treble: "Treble", bass: "Bass", both: "Both" };
+
+function makePrompt(setting: ClefSetting): Prompt {
+  const clef = randomClef(setting);
+  const note = randomNote(clef);
+  return { note, clef, rows: visibleRows(note) };
+}
 
 export function SightReadingPage() {
   css`
@@ -148,9 +159,15 @@ export function SightReadingPage() {
       background: #f7f0e6;
       border-radius: 0.75rem;
       display: flex;
-      gap: 0.5rem;
-      justify-content: space-between;
+      flex-direction: column;
+      gap: 0.4rem;
       padding: 0.6rem 0.9rem;
+    }
+
+    .results-list .missed-names {
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
     }
 
     .results-list .picked {
@@ -176,10 +193,10 @@ export function SightReadingPage() {
     }
   `;
 
-  const [clef, setClef] = createSignal<Clef>(readSightReadingClefPreference());
+  const [clefSetting, setClefSetting] = createSignal<ClefSetting>(readSightReadingClefPreference());
   const [duration, setDuration] = createSignal(readSightReadingDurationPreference());
   const [phase, setPhase] = createSignal<Phase>("setup");
-  const [note, setNote] = createSignal<Note>(randomNote(clef()));
+  const [prompt, setPrompt] = createSignal<Prompt>(makePrompt(clefSetting()));
   const [correct, setCorrect] = createSignal(0);
   const [total, setTotal] = createSignal(0);
   const [wrong, setWrong] = createSignal<WrongAnswer[]>([]);
@@ -221,27 +238,27 @@ export function SightReadingPage() {
   };
 
   const start = () => {
-    writeSightReadingClefPreference(clef());
+    writeSightReadingClefPreference(clefSetting());
     writeSightReadingDurationPreference(duration());
     setCorrect(0);
     setTotal(0);
     setWrong([]);
     setRemaining(duration());
     setElapsed(0);
-    setNote(randomNote(clef()));
+    setPrompt(makePrompt(clefSetting()));
     setPhase("playing");
     startTimer();
   };
 
   const answer = (name: string) => {
-    const correctName = noteName(note());
+    const current = prompt();
     setTotal((value) => value + 1);
-    if (name === correctName) {
+    if (name === noteName(current.note)) {
       setCorrect((value) => value + 1);
     } else {
-      setWrong((list) => [...list, { shown: correctName, picked: name }]);
+      setWrong((list) => [...list, { note: current.note, clef: current.clef, picked: name }]);
     }
-    setNote(randomNote(clef()));
+    setPrompt(makePrompt(clefSetting()));
   };
 
   const backToSetup = () => {
@@ -266,9 +283,9 @@ export function SightReadingPage() {
           <div class="field">
             <span class="field-label">Clef</span>
             <div class="segmented" role="group" aria-label="Clef">
-              <For each={CLEFS}>
+              <For each={CLEF_SETTINGS}>
                 {(option) => (
-                  <button type="button" aria-pressed={clef() === option} onClick={() => setClef(option)}>
+                  <button type="button" aria-pressed={clefSetting() === option} onClick={() => setClefSetting(option)}>
                     {clefLabels[option]}
                   </button>
                 )}
@@ -312,11 +329,11 @@ export function SightReadingPage() {
         </dl>
 
         <div class="panel">
-          <Staff note={note()} clef={clef()} />
+          <Staff note={prompt().note} clef={prompt().clef} />
         </div>
 
         <div class="answer-grid" role="group" aria-label="Note options">
-          <For each={ANSWER_OPTIONS}>
+          <For each={ANSWER_OPTIONS.filter((option) => prompt().rows.has(option.row))}>
             {(option) => (
               <button
                 type="button"
@@ -342,6 +359,15 @@ export function SightReadingPage() {
           <p>{accuracyPercent(correct(), total())}% accuracy over {total()} notes.</p>
         </div>
 
+        <div class="segmented">
+          <button type="button" class="primary-button" onClick={start}>
+            Play again
+          </button>
+          <button type="button" class="ghost-button" onClick={backToSetup}>
+            Change settings
+          </button>
+        </div>
+
         <div class="panel">
           <Show
             when={wrong().length > 0}
@@ -352,22 +378,16 @@ export function SightReadingPage() {
               <For each={wrong()}>
                 {(item) => (
                   <li>
-                    <span>You picked <span class="picked">{item.picked}</span></span>
-                    <span>Answer <span class="correct">{item.shown}</span></span>
+                    <Staff note={item.note} clef={item.clef} />
+                    <span class="missed-names">
+                      <span>You picked <span class="picked">{item.picked}</span></span>
+                      <span>Answer <span class="correct">{noteName(item.note)}</span></span>
+                    </span>
                   </li>
                 )}
               </For>
             </ul>
           </Show>
-        </div>
-
-        <div class="segmented">
-          <button type="button" class="primary-button" onClick={start}>
-            Play again
-          </button>
-          <button type="button" class="ghost-button" onClick={backToSetup}>
-            Change settings
-          </button>
         </div>
       </Show>
     </section>

@@ -8,8 +8,10 @@ import {
   formatClock,
   noteName,
   noteToAbc,
+  randomClef,
   randomNote,
   validAccidentals,
+  visibleRows,
   type Note
 } from "../../src/common/sightReading.ts";
 
@@ -82,4 +84,40 @@ test("formatClock pads minutes and seconds", () => {
   assert.equal(formatClock(16), "00:16");
   assert.equal(formatClock(75), "01:15");
   assert.equal(formatClock(-5), "00:00");
+});
+
+test("randomClef respects fixed settings and picks both", () => {
+  assert.equal(randomClef("treble"), "treble");
+  assert.equal(randomClef("bass"), "bass");
+  assert.equal(randomClef("both", () => 0), "treble");
+  assert.equal(randomClef("both", () => 0.9), "bass");
+});
+
+test("visibleRows always shows naturals plus the answer's row", () => {
+  // Natural note: naturals row + one random accidental row, exactly two rows.
+  const naturalRows = visibleRows({ letter: "C", octave: 4, accidental: "natural" }, () => 0);
+  assert.deepEqual([...naturalRows].sort(), [1, 2]);
+
+  // Sharp note: naturals (2) + sharps (1).
+  const sharpRows = visibleRows({ letter: "F", octave: 4, accidental: "sharp" });
+  assert.deepEqual([...sharpRows].sort(), [1, 2]);
+
+  // Flat note: naturals (2) + flats (3).
+  const flatRows = visibleRows({ letter: "B", octave: 4, accidental: "flat" });
+  assert.deepEqual([...flatRows].sort(), [2, 3]);
+});
+
+test("visible rows always include the correct answer's option", () => {
+  for (const clef of ["treble", "bass"] as const) {
+    for (const slot of STAFF_SLOTS[clef]) {
+      for (const accidental of validAccidentals(slot.letter)) {
+        const note: Note = { ...slot, accidental };
+        const rows = visibleRows(note);
+        const answerable = ANSWER_OPTIONS.some(
+          (option) => rows.has(option.row) && option.name === noteName(note)
+        );
+        assert.ok(answerable, `${noteName(note)} must be selectable in its visible rows`);
+      }
+    }
+  }
 });
