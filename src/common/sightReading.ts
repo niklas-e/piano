@@ -19,10 +19,21 @@ export const DURATION_OPTIONS: readonly DurationOption[] = [
 export const CLEFS: readonly Clef[] = ["treble", "bass"] as const;
 export const CLEF_SETTINGS: readonly ClefSetting[] = ["treble", "bass", "both"] as const;
 
-// Comfortable single-octave-ish reading ranges, ledger lines kept minimal.
-// A staff slot is just a letter + octave; the accidental is chosen per draw.
-const trebleSlots = slots(4, ["C", "D", "E", "F", "G", "A", "B"]).concat(slots(5, ["C", "D", "E", "F", "G"]));
-const bassSlots = slots(2, ["E", "F", "G", "A", "B"]).concat(slots(3, ["C", "D", "E", "F", "G", "A", "B"]), slots(4, ["C"]));
+// Reading ranges extend up to three ledger lines above and below each staff,
+// since those notes are common in real music. A staff slot is just a letter +
+// octave; the accidental is chosen per draw.
+// Treble: F3 (3rd ledger below) up to F6 (3rd ledger above).
+const trebleSlots = slots(3, ["E", "F", "G", "A", "B"]).concat(
+  slots(4, ["C", "D", "E", "F", "G", "A", "B"]),
+  slots(5, ["C", "D", "E", "F", "G", "A", "B"]),
+  slots(6, ["C", "D", "E", "F"])
+);
+// Bass: A1 (3rd ledger below) up to G4 (3rd ledger above).
+const bassSlots = slots(1, ["G", "A", "B"]).concat(
+  slots(2, ["C", "D", "E", "F", "G", "A", "B"]),
+  slots(3, ["C", "D", "E", "F", "G", "A", "B"]),
+  slots(4, ["C", "D", "E", "F", "G", "A"])
+);
 
 export const STAFF_SLOTS: Record<Clef, ReadonlyArray<{ letter: Letter; octave: number }>> = {
   treble: trebleSlots,
