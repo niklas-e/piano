@@ -1,6 +1,7 @@
 import { For, Show, createSignal, onCleanup } from "solid-js";
 import { css } from "solid-styled";
 import { Staff } from "../common/Staff";
+import { PhIcon } from "../common/PhIcon";
 import {
   ANSWER_OPTIONS,
   CLEF_SETTINGS,
@@ -48,6 +49,47 @@ export function SightReadingPage() {
       display: grid;
       gap: 1.25rem;
       padding: clamp(1.25rem, 4vw, 2rem);
+      position: relative;
+      transition: border-color 0.5s ease, background-color 0.5s ease;
+    }
+
+    /* Brief, fading tint on the staff panel as answer feedback. The flash state
+       snaps on (no transition) and the base .panel rule eases it back out. */
+    .panel.flash-correct,
+    .panel.flash-wrong {
+      transition: none;
+    }
+
+    .panel.flash-correct {
+      background: #eef5ed;
+      border-color: #2f6b3a;
+    }
+
+    .panel.flash-wrong {
+      background: #f7ece9;
+      border-color: #a23b2c;
+    }
+
+    /* Shape-based indicator (check vs cross) so feedback never relies on color
+       alone, which red/green color blindness can't distinguish. */
+    .feedback-mark {
+      align-items: center;
+      border-radius: 999px;
+      color: #fffaf2;
+      display: inline-flex;
+      justify-content: center;
+      padding: 0.3rem;
+      position: absolute;
+      right: 0.75rem;
+      top: 0.75rem;
+    }
+
+    .feedback-mark.feedback-correct {
+      background: #2f6b3a;
+    }
+
+    .feedback-mark.feedback-wrong {
+      background: #a23b2c;
     }
 
     .field {
@@ -202,8 +244,10 @@ export function SightReadingPage() {
   const [wrong, setWrong] = createSignal<WrongAnswer[]>([]);
   const [remaining, setRemaining] = createSignal(0);
   const [elapsed, setElapsed] = createSignal(0);
+  const [feedback, setFeedback] = createSignal<"correct" | "wrong" | null>(null);
 
   let timerId: number | undefined;
+  let feedbackTimer: number | undefined;
   let startedAt = 0;
 
   const stopTimer = () => {
@@ -251,14 +295,22 @@ export function SightReadingPage() {
   };
 
   const answer = (name: string) => {
+    if (feedback()) return; // Ignore clicks while the answered note is still flashing.
     const current = prompt();
     setTotal((value) => value + 1);
-    if (name === noteName(current.note)) {
+    const isCorrect = name === noteName(current.note);
+    if (isCorrect) {
       setCorrect((value) => value + 1);
     } else {
       setWrong((list) => [...list, { note: current.note, clef: current.clef, picked: name }]);
     }
-    setPrompt(makePrompt(clefSetting()));
+    // Flash feedback on the answered note, then advance to the next one.
+    setFeedback(isCorrect ? "correct" : "wrong");
+    window.clearTimeout(feedbackTimer);
+    feedbackTimer = window.setTimeout(() => {
+      setFeedback(null);
+      setPrompt(makePrompt(clefSetting()));
+    }, 450);
   };
 
   const backToSetup = () => {
@@ -268,7 +320,10 @@ export function SightReadingPage() {
 
   const timeLabel = () => formatClock(duration() === 0 ? elapsed() : remaining());
 
-  onCleanup(stopTimer);
+  onCleanup(() => {
+    stopTimer();
+    window.clearTimeout(feedbackTimer);
+  });
 
   return (
     <section class="sight-reading stack" aria-label="Sight reading">
@@ -328,7 +383,20 @@ export function SightReadingPage() {
           </div>
         </dl>
 
-        <div class="panel">
+        <div
+          classList={{
+            panel: true,
+            "flash-correct": feedback() === "correct",
+            "flash-wrong": feedback() === "wrong"
+          }}
+        >
+          <Show when={feedback()}>
+            {(mark) => (
+              <span class={`feedback-mark feedback-${mark()}`} aria-hidden="true">
+                <PhIcon name={mark() === "correct" ? "check" : "x"} weight="bold" size={22} />
+              </span>
+            )}
+          </Show>
           <Staff note={prompt().note} clef={prompt().clef} />
         </div>
 

@@ -6,6 +6,7 @@ export const iconModuleLoaders = {
   "list": () => import("@phosphor-icons/webcomponents/PhList"),
   "magnifying-glass": () => import("@phosphor-icons/webcomponents/PhMagnifyingGlass"),
   "x": () => import("@phosphor-icons/webcomponents/PhX"),
+  "check": () => import("@phosphor-icons/webcomponents/PhCheck"),
   "plus": () => import("@phosphor-icons/webcomponents/PhPlus"),
   "minus": () => import("@phosphor-icons/webcomponents/PhMinus"),
 } satisfies Record<string, IconModuleLoader>;
