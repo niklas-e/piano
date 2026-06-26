@@ -4,7 +4,10 @@ test("scale detail renders notes, fingering, keyboard, and persists last opened 
   await page.goto("/exercises/c-major-scale");
 
   await expect(page.getByRole("heading", { name: "C major scale" })).toBeVisible();
-  await expect(page.getByText("C - D - E - F - G - A - B - C")).toBeVisible();
+  // The note names now live under the staff as abcjs lyrics instead of a text paragraph.
+  await expect(page.locator(".practice-panel .exercise-staff .abcjs-lyric")).toHaveText([
+    "C", "D", "E", "F", "G", "A", "B", "C"
+  ]);
   await expect(page.getByRole("group", { name: "Practice keyboard" })).toBeVisible();
   await expect(page.getByTestId("key-C4")).toContainText("C");
   await expect(page.getByTestId("key-C4")).toContainText("1");
@@ -23,7 +26,8 @@ test("scale detail renders notes, fingering, keyboard, and persists last opened 
 
   await page.getByRole("button", { name: "Increase range" }).click();
   await expect(page.getByText("2 octaves", { exact: true })).toBeVisible();
-  await expect(page.locator(".practice-panel .sequence")).toHaveText("C - D - E - F - G - A - B - C");
+  // Two octaves expands the staff to fifteen note-name lyrics.
+  await expect(page.locator(".practice-panel .exercise-staff .abcjs-lyric")).toHaveCount(15);
   await expect(page.getByTestId("key-C6")).toHaveAttribute("aria-label", "C6 highlighted");
   await expect(page.locator(".metronome-card.compact")).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem("piano:last-exercise-id"))).toBe("c-major-scale");
@@ -105,7 +109,7 @@ test("arpeggio detail renders chord-tone pattern", async ({ page }) => {
   await page.goto("/exercises/a-minor-arpeggio");
 
   await expect(page.getByRole("heading", { name: "A minor arpeggio" })).toBeVisible();
-  await expect(page.getByText("A - C - E - A")).toBeVisible();
+  await expect(page.locator(".practice-panel .exercise-staff .abcjs-lyric")).toHaveText(["A", "C", "E", "A"]);
 });
 
 test("unknown exercise id renders fallback", async ({ page }) => {
@@ -113,4 +117,47 @@ test("unknown exercise id renders fallback", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "Exercise not found" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Back to exercises" })).toHaveAttribute("href", "/exercises");
+});
+
+test("exercise staff renders the scale with note-name lyrics", async ({ page }) => {
+  await page.goto("/exercises/a-major-scale");
+  await page.waitForSelector(".exercise-staff svg .abcjs-lyric");
+
+  const lyrics = page.locator(".exercise-staff .abcjs-lyric");
+  await expect(lyrics).toHaveCount(8);
+  await expect(lyrics.filter({ hasText: "C#" })).toHaveCount(1);
+  await expect(lyrics.filter({ hasText: "G#" })).toHaveCount(1);
+});
+
+test("exercise staff follows the octave range", async ({ page }) => {
+  await page.goto("/exercises/a-major-scale");
+  await page.waitForSelector(".exercise-staff svg .abcjs-lyric");
+
+  const lyrics = page.locator(".exercise-staff .abcjs-lyric");
+  await expect(lyrics).toHaveCount(8);
+
+  await page.getByRole("button", { name: "Increase range" }).click();
+  await expect(lyrics).toHaveCount(15);
+});
+
+test("exercise staff switches clef when the hand changes", async ({ page }) => {
+  await page.goto("/exercises/a-major-scale");
+  await page.waitForSelector(".exercise-staff svg .abcjs-lyric");
+
+  const staff = page.locator(".exercise-staff");
+  const before = await staff.innerHTML();
+
+  await page.getByRole("radio", { name: "Left hand" }).check();
+  // Re-render to bass clef changes the glyphs and note positions.
+  await expect.poll(() => staff.innerHTML()).not.toBe(before);
+  await expect(page.locator(".exercise-staff .abcjs-lyric")).toHaveCount(8);
+});
+
+test("two-octave scale stays centred on the treble staff", async ({ page }) => {
+  await page.goto("/exercises/a-major-scale");
+  await page.waitForSelector(".exercise-staff svg .abcjs-lyric");
+  await page.getByRole("button", { name: "Increase range" }).click();
+  await expect(page.locator(".exercise-staff .abcjs-lyric")).toHaveCount(15);
+
+  await expect(page.locator(".exercise-staff")).toHaveScreenshot("a-major-two-octave-treble.png");
 });

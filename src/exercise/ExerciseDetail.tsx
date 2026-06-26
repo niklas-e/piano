@@ -4,6 +4,7 @@ import { type Exercise, type Hand } from "../common/exercises";
 import { buildPianoKeyboard } from "../common/keyboard";
 import { derivePracticeRange, type PracticeRange } from "../common/practiceRange";
 import { readHandPreference, writeHandPreference, writeLastExerciseIdPreference } from "../common/preferences";
+import { ExerciseStaff } from "../common/ExerciseStaff";
 import { Keyboard } from "../common/Keyboard";
 import { KeyboardMinimap } from "../common/KeyboardMinimap";
 import { MetronomeControls } from "../common/Metronome";
@@ -102,17 +103,6 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
       border-radius: 1rem;
       padding: 0.85rem;
     }
-
-    .practice-panel h2 {
-      margin-top: 0;
-    }
-
-    .sequence {
-      font-size: clamp(1.3rem, 5vw, 2.3rem);
-      font-weight: 900;
-      letter-spacing: -0.05em;
-      margin: 0;
-    }
   `;
 
   const [hand, setHand] = createSignal<Hand>(readHandPreference());
@@ -176,9 +166,13 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
         </fieldset>
       </div>
 
-      <section class="practice-panel" aria-labelledby="notes-heading">
-        <h2 id="notes-heading">Notes</h2>
-        <p class="sequence">{props.exercise.notes.join(" - ")}</p>
+      <section class="practice-panel" aria-label={`${props.exercise.title} notes`}>
+        <ExerciseStaff
+          notes={practice().notes}
+          clef={practice().clef}
+          baseOctave={practice().baseOctave}
+          label={`${props.exercise.title} on the staff`}
+        />
         <KeyboardMinimap keys={keyboardKeys} keyIds={practice().keyIds} />
       </section>
 
