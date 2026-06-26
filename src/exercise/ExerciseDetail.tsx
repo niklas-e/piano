@@ -180,7 +180,7 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
         keys={keyboardKeys}
         keyIds={practice().keyIds}
         fingering={practice().fingering}
-        scrollKey={`${props.exercise.id}:${hand()}`}
+        scrollKey={`${props.exercise.id}:${hand()}:${range()}`}
       />
 
       <MetronomeControls variant="compact" />
