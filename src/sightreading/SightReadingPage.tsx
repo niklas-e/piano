@@ -53,6 +53,10 @@ export function SightReadingPage() {
       transition: border-color 0.5s ease, background-color 0.5s ease;
     }
 
+    .panel-no-padding {
+      padding: 0;
+    }
+
     /* Brief, fading tint on the staff panel as answer feedback. The flash state
        snaps on (no transition) and the base .panel rule eases it back out. */
     .panel.flash-correct,
@@ -386,6 +390,7 @@ export function SightReadingPage() {
         <div
           classList={{
             panel: true,
+            "panel-no-padding": true,
             "flash-correct": feedback() === "correct",
             "flash-wrong": feedback() === "wrong"
           }}

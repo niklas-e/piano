@@ -5,7 +5,6 @@ import { buildAbc, type Clef, type Note } from "./sightReading";
 
 const STAFF_WIDTH = 160;
 const SCALE = 2;
-const BOX_WIDTH = 280;
 
 /**
  * Renders a single whole note on a treble or bass staff via abcjs.
@@ -22,8 +21,6 @@ export function Staff(props: { note: Note; clef: Clef }) {
       justify-content: center;
       margin: 0 auto;
       max-width: 100%;
-      overflow: hidden;
-      width: ${`${BOX_WIDTH}px`};
     }
   `;
 
