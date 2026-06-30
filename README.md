@@ -47,9 +47,3 @@ If Playwright browsers are missing, install Chromium:
 ```bash
 pnpm exec playwright install chromium
 ```
-
-## Static Hosting
-
-The app builds to `dist` with `pnpm build`. Static hosting for `piano.niklas-e.fi` must serve `index.html` for client-side routes such as `/exercises/c-major-scale` and `/metronome`.
-
-No backend, account system, profile data, practice history, or cloud sync is required.
