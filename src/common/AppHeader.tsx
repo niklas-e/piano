@@ -24,11 +24,20 @@ export function AppHeader(props: {
     }
 
     .site-title {
+      align-items: center;
       color: inherit;
+      display: flex;
       font-size: clamp(1.2rem, 3vw, 1.5rem);
       font-weight: 800;
+      gap: 0.6rem;
       letter-spacing: -0.03em;
       text-decoration: none;
+    }
+
+    .site-logo {
+      flex: none;
+      height: 1.6em;
+      width: 1.6em;
     }
 
     .site-nav {
@@ -109,6 +118,7 @@ export function AppHeader(props: {
         href={headerLink().href}
         onClick={handleNavigation(headerLink().href)}
       >
+        <img class="site-logo" src="/logo.svg" alt="" aria-hidden="true" />
         {headerLink().title}
       </a>
 
