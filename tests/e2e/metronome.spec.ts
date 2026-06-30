@@ -1,211 +1,258 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test"
 
-test("full metronome starts, stops, adjusts BPM, and persists tempo", async ({ page }) => {
-  await page.goto("/metronome");
+test("full metronome starts, stops, adjusts BPM, and persists tempo", async ({
+  page,
+}) => {
+  await page.goto("/metronome")
 
-  await expect(page.locator(".site-title")).toHaveText("Metronome");
-  await expect(page.getByLabel("Tempo in BPM")).toHaveValue("80");
+  await expect(page.locator(".site-title")).toHaveText("Metronome")
+  await expect(page.getByLabel("Tempo in BPM")).toHaveValue("80")
 
-  await page.getByRole("button", { name: "+5 BPM" }).click();
-  await expect(page.getByLabel("Tempo in BPM")).toHaveValue("85");
+  await page.getByRole("button", { name: "+5 BPM" }).click()
+  await expect(page.getByLabel("Tempo in BPM")).toHaveValue("85")
 
-  await page.getByRole("button", { name: "Start metronome" }).click();
-  await expect(page.getByRole("button", { name: "Stop metronome" })).toHaveText("Stop metronome");
-  await expect(page.locator(".pulse .elapsed")).toBeVisible();
+  await page.getByRole("button", { name: "Start metronome" }).click()
+  await expect(page.getByRole("button", { name: "Stop metronome" })).toHaveText(
+    "Stop metronome",
+  )
+  await expect(page.locator(".pulse .elapsed")).toBeVisible()
 
-  await page.getByRole("button", { name: "Stop metronome" }).click();
-  await expect(page.getByRole("button", { name: "Start metronome" })).toHaveText("Start metronome");
-  await expect.poll(() => page.evaluate(() => window.localStorage.getItem("piano:bpm"))).toBe("85");
+  await page.getByRole("button", { name: "Stop metronome" }).click()
+  await expect(
+    page.getByRole("button", { name: "Start metronome" }),
+  ).toHaveText("Start metronome")
+  await expect
+    .poll(() => page.evaluate(() => window.localStorage.getItem("piano:bpm")))
+    .toBe("85")
 
-  await page.reload();
-  await expect(page.getByLabel("Tempo in BPM")).toHaveValue("85");
-});
+  await page.reload()
+  await expect(page.getByLabel("Tempo in BPM")).toHaveValue("85")
+})
 
-test("native buttons show a pressed state while pointer is held down", async ({ page }) => {
-  await page.goto("/metronome");
+test("native buttons show a pressed state while pointer is held down", async ({
+  page,
+}) => {
+  await page.goto("/metronome")
 
-  const button = page.getByRole("button", { name: "+5 BPM" });
-  const bounds = await button.boundingBox();
-  expect(bounds).not.toBeNull();
+  const button = page.getByRole("button", { name: "+5 BPM" })
+  const bounds = await button.boundingBox()
+  expect(bounds).not.toBeNull()
 
-  await page.mouse.move((bounds?.x ?? 0) + (bounds?.width ?? 0) / 2, (bounds?.y ?? 0) + (bounds?.height ?? 0) / 2);
-  await page.mouse.down();
+  await page.mouse.move(
+    (bounds?.x ?? 0) + (bounds?.width ?? 0) / 2,
+    (bounds?.y ?? 0) + (bounds?.height ?? 0) / 2,
+  )
+  await page.mouse.down()
 
   await expect
     .poll(() => button.evaluate((element) => getComputedStyle(element).filter))
-    .not.toBe("none");
+    .not.toBe("none")
 
-  await page.mouse.up();
-  await expect.
-    poll(() => button.evaluate((element) => getComputedStyle(element).filter))
-    .toBe("none");
-});
+  await page.mouse.up()
+  await expect
+    .poll(() => button.evaluate((element) => getComputedStyle(element).filter))
+    .toBe("none")
+})
 
-test("full metronome tap tempo sets BPM and elapsed time resets on start", async ({ page }) => {
-  await page.goto("/metronome");
+test("full metronome tap tempo sets BPM and elapsed time resets on start", async ({
+  page,
+}) => {
+  await page.goto("/metronome")
 
-  await expect(page.getByRole("button", { name: "Tap tempo" }).locator(".ph-icon")).toHaveCount(1);
+  await expect(
+    page.getByRole("button", { name: "Tap tempo" }).locator(".ph-icon"),
+  ).toHaveCount(1)
 
   // Four taps ~400ms apart -> ~150 BPM; assert the input changed away from 80.
   for (let i = 0; i < 4; i += 1) {
-    await page.getByRole("button", { name: "Tap tempo" }).click();
-    await page.waitForTimeout(400);
+    await page.getByRole("button", { name: "Tap tempo" }).click()
+    await page.waitForTimeout(400)
   }
-  const tappedBpm = Number(await page.getByLabel("Tempo in BPM").inputValue());
-  expect(tappedBpm).toBeGreaterThanOrEqual(100);
-  expect(tappedBpm).toBeLessThanOrEqual(200);
+  const tappedBpm = Number(await page.getByLabel("Tempo in BPM").inputValue())
+  expect(tappedBpm).toBeGreaterThanOrEqual(100)
+  expect(tappedBpm).toBeLessThanOrEqual(200)
 
-  await page.getByRole("button", { name: "Start metronome" }).click();
-  await expect(page.locator(".pulse .elapsed")).toBeVisible();
-  await expect.poll(() => page.locator(".pulse .elapsed").textContent()).not.toBe("0:00");
+  await page.getByRole("button", { name: "Start metronome" }).click()
+  await expect(page.locator(".pulse .elapsed")).toBeVisible()
+  await expect
+    .poll(() => page.locator(".pulse .elapsed").textContent())
+    .not.toBe("0:00")
 
-  await page.getByRole("button", { name: "Stop metronome" }).click();
-  await expect(page.locator(".pulse .elapsed")).toHaveText("0:00");
-});
+  await page.getByRole("button", { name: "Stop metronome" }).click()
+  await expect(page.locator(".pulse .elapsed")).toHaveText("0:00")
+})
 
 test("compact metronome works from exercise pages", async ({ page }) => {
-  await page.goto("/exercises/c-major-scale");
+  await page.goto("/exercises/c-major-scale")
 
-  const compactCard = page.locator(".metronome-card.compact");
-  await expect(compactCard).toBeVisible();
-  await expect(compactCard.locator(".pulse")).toHaveCount(0);
+  const compactCard = page.locator(".metronome-card.compact")
+  await expect(compactCard).toBeVisible()
+  await expect(compactCard.locator(".pulse")).toHaveCount(0)
 
-  const compactBox = await compactCard.boundingBox();
-  expect(compactBox?.height ?? 0).toBeLessThan(180);
+  const compactBox = await compactCard.boundingBox()
+  expect(compactBox?.height ?? 0).toBeLessThan(180)
 
-  await page.getByRole("button", { name: "+5 BPM" }).click();
-  await expect(compactCard.locator(".bpm-readout")).toContainText("85");
-  await page.getByRole("button", { name: "Start metronome" }).click();
-  await expect(page.getByRole("button", { name: "Stop metronome" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open full metronome" })).toHaveCount(0);
-});
+  await page.getByRole("button", { name: "+5 BPM" }).click()
+  await expect(compactCard.locator(".bpm-readout")).toContainText("85")
+  await page.getByRole("button", { name: "Start metronome" }).click()
+  await expect(
+    page.getByRole("button", { name: "Stop metronome" }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole("link", { name: "Open full metronome" }),
+  ).toHaveCount(0)
+})
 
 test("visual pulse animation is finite and BPM-coupled", async ({ page }) => {
-  await page.goto("/metronome");
-  await setTempo(page, 60);
+  await page.goto("/metronome")
+  await setTempo(page, 60)
 
-  await page.getByRole("button", { name: "Start metronome" }).click();
-  await expect.poll(() => readBeatCount(page)).toBeGreaterThan(0);
+  await page.getByRole("button", { name: "Start metronome" }).click()
+  await expect.poll(() => readBeatCount(page)).toBeGreaterThan(0)
 
-  const slowPulse = await readPulseAnimation(page);
-  expect(slowPulse.iterationCount).toBe("1");
-  expect(slowPulse.durationMs).toBeGreaterThan(0);
+  const slowPulse = await readPulseAnimation(page)
+  expect(slowPulse.iterationCount).toBe("1")
+  expect(slowPulse.durationMs).toBeGreaterThan(0)
 
-  await setTempo(page, 180);
-  await expect.poll(() => readBeatCount(page)).toBeGreaterThan(1);
+  await setTempo(page, 180)
+  await expect.poll(() => readBeatCount(page)).toBeGreaterThan(1)
 
-  const fastPulse = await readPulseAnimation(page);
-  expect(fastPulse.iterationCount).toBe("1");
-  expect(fastPulse.durationMs).toBeLessThan(slowPulse.durationMs);
-});
+  const fastPulse = await readPulseAnimation(page)
+  expect(fastPulse.iterationCount).toBe("1")
+  expect(fastPulse.durationMs).toBeLessThan(slowPulse.durationMs)
+})
 
-test("metronome shows audio-unavailable message when Web Audio resume fails asynchronously", async ({ page }) => {
+test("metronome shows audio-unavailable message when Web Audio resume fails asynchronously", async ({
+  page,
+}) => {
   await page.addInitScript(() => {
     class RejectingAudioContext {
-      currentTime = 0;
-      destination = {};
+      currentTime = 0
+      destination = {}
       createOscillator() {
         return {
           connect() {},
           frequency: { value: 0 },
           start() {},
-          stop() {}
-        };
+          stop() {},
+        }
       }
       createGain() {
         return {
           connect() {},
           gain: {
             exponentialRampToValueAtTime() {},
-            setValueAtTime() {}
-          }
-        };
+            setValueAtTime() {},
+          },
+        }
       }
       resume() {
-        return Promise.reject(new Error("resume blocked"));
+        return Promise.reject(new Error("resume blocked"))
       }
       close() {
-        return Promise.resolve();
+        return Promise.resolve()
       }
     }
 
-    window.AudioContext = RejectingAudioContext as unknown as typeof AudioContext;
-    window.webkitAudioContext = undefined;
-  });
+    window.AudioContext =
+      RejectingAudioContext as unknown as typeof AudioContext
+    window.webkitAudioContext = undefined
+  })
 
-  await page.goto("/metronome");
-  await page.getByRole("button", { name: "Start metronome" }).click();
+  await page.goto("/metronome")
+  await page.getByRole("button", { name: "Start metronome" }).click()
 
-  await expect(page.getByRole("button", { name: "Stop metronome" })).toBeVisible();
-  await expect(page.locator(".pulse")).toBeVisible();
-  await expect(page.getByText("Audio click unavailable. Visual pulse is still active.")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Stop metronome" }),
+  ).toBeVisible()
+  await expect(page.locator(".pulse")).toBeVisible()
+  await expect(
+    page.getByText("Audio click unavailable. Visual pulse is still active."),
+  ).toBeVisible()
   await expect
-    .poll(() => page.locator(".pulse").evaluate((element) => Number(element.getAttribute("data-beat") ?? "0")))
-    .toBeGreaterThan(1);
-});
+    .poll(() =>
+      page
+        .locator(".pulse")
+        .evaluate((element) =>
+          Number(element.getAttribute("data-beat") ?? "0"),
+        ),
+    )
+    .toBeGreaterThan(1)
+})
 
-test("metronome keeps visual pulse running when Web Audio graph creation fails", async ({ page }) => {
+test("metronome keeps visual pulse running when Web Audio graph creation fails", async ({
+  page,
+}) => {
   await page.addInitScript(() => {
     class ThrowingGraphAudioContext {
-      currentTime = 0;
-      destination = {};
+      currentTime = 0
+      destination = {}
       createOscillator() {
-        throw new Error("oscillator unavailable");
+        throw new Error("oscillator unavailable")
       }
       createGain() {
-        throw new Error("gain unavailable");
+        throw new Error("gain unavailable")
       }
       resume() {
-        return Promise.resolve();
+        return Promise.resolve()
       }
       close() {
-        return Promise.resolve();
+        return Promise.resolve()
       }
     }
 
-    window.AudioContext = ThrowingGraphAudioContext as unknown as typeof AudioContext;
-    window.webkitAudioContext = undefined;
-  });
+    window.AudioContext =
+      ThrowingGraphAudioContext as unknown as typeof AudioContext
+    window.webkitAudioContext = undefined
+  })
 
-  await page.goto("/metronome");
-  await page.getByRole("button", { name: "Start metronome" }).click();
+  await page.goto("/metronome")
+  await page.getByRole("button", { name: "Start metronome" }).click()
 
-  await expect(page.getByRole("button", { name: "Stop metronome" })).toBeVisible();
-  await expect(page.locator(".pulse")).toBeVisible();
-  await expect(page.getByText("Audio click unavailable. Visual pulse is still active.")).toBeVisible();
-});
+  await expect(
+    page.getByRole("button", { name: "Stop metronome" }),
+  ).toBeVisible()
+  await expect(page.locator(".pulse")).toBeVisible()
+  await expect(
+    page.getByText("Audio click unavailable. Visual pulse is still active."),
+  ).toBeVisible()
+})
 
 async function setTempo(page: Page, bpm: number) {
   await page.getByLabel("Tempo in BPM").evaluate((input, value) => {
-    const tempoInput = input as HTMLInputElement;
-    tempoInput.value = String(value);
-    tempoInput.dispatchEvent(new Event("change", { bubbles: true }));
-  }, bpm);
-  await expect(page.getByLabel("Tempo in BPM")).toHaveValue(String(bpm));
+    const tempoInput = input as HTMLInputElement
+    tempoInput.value = String(value)
+    tempoInput.dispatchEvent(new Event("change", { bubbles: true }))
+  }, bpm)
+  await expect(page.getByLabel("Tempo in BPM")).toHaveValue(String(bpm))
 }
 
 async function readBeatCount(page: Page) {
-  return page.locator(".pulse").evaluate((element) => Number(element.getAttribute("data-beat") ?? "0"));
+  return page
+    .locator(".pulse")
+    .evaluate((element) => Number(element.getAttribute("data-beat") ?? "0"))
 }
 
 async function readPulseAnimation(page: Page) {
   const animation = await page.locator(".pulse").evaluate((element) => {
-    const style = getComputedStyle(element);
+    const style = getComputedStyle(element)
 
     return {
       duration: style.animationDuration,
-      iterationCount: style.animationIterationCount
-    };
-  });
+      iterationCount: style.animationIterationCount,
+    }
+  })
 
   return {
     durationMs: parseCssTime(animation.duration),
-    iterationCount: animation.iterationCount
-  };
+    iterationCount: animation.iterationCount,
+  }
 }
 
 function parseCssTime(value: string): number {
-  const firstValue = value.split(",")[0]?.trim() ?? "0s";
+  const firstValue = value.split(",")[0]?.trim() ?? "0s"
 
-  return firstValue.endsWith("ms") ? Number.parseFloat(firstValue) : Number.parseFloat(firstValue) * 1000;
+  return firstValue.endsWith("ms")
+    ? Number.parseFloat(firstValue)
+    : Number.parseFloat(firstValue) * 1000
 }

@@ -1,15 +1,15 @@
-import type { JSX } from "solid-js";
-import { css } from "solid-styled";
-import { PhIcon } from "./PhIcon";
+import type { JSX } from "solid-js"
+import { css } from "solid-styled"
+import { PhIcon } from "./PhIcon"
 
 export function StepperButton(props: {
-  direction: "increment" | "decrement";
-  ariaLabel: string;
-  variant?: "round" | "pill" | "segment";
-  disabled?: boolean;
-  onClick?: JSX.EventHandlerUnion<HTMLButtonElement, MouseEvent>;
-  class?: string;
-  children?: JSX.Element;
+  direction: "increment" | "decrement"
+  ariaLabel: string
+  variant?: "round" | "pill" | "segment"
+  disabled?: boolean
+  onClick?: JSX.EventHandlerUnion<HTMLButtonElement, MouseEvent>
+  class?: string
+  children?: JSX.Element
 }) {
   css`
     .stepper-button {
@@ -57,15 +57,19 @@ export function StepperButton(props: {
       cursor: not-allowed;
       opacity: 0.42;
     }
-  `;
+  `
 
-  const variant = props.variant ?? "round";
-  const iconSize = variant === "round" ? 18 : 14;
+  const variant = props.variant ?? "round"
+  const iconSize = variant === "round" ? 18 : 14
 
   return (
     <button
       type="button"
-      class={props.class ? `stepper-button ${variant} ${props.class}` : `stepper-button ${variant}`}
+      class={
+        props.class
+          ? `stepper-button ${variant} ${props.class}`
+          : `stepper-button ${variant}`
+      }
       aria-label={props.ariaLabel}
       disabled={props.disabled}
       onClick={props.onClick}
@@ -80,5 +84,5 @@ export function StepperButton(props: {
         />
       )}
     </button>
-  );
+  )
 }

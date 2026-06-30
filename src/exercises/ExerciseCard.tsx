@@ -1,6 +1,6 @@
-import { type Exercise } from "../common/exercises";
-import { css } from "solid-styled";
-import { HighlightedText } from "../common/HighlightedText";
+import { css } from "solid-styled"
+import type { Exercise } from "../common/exercises"
+import { HighlightedText } from "../common/HighlightedText"
 
 export function ExerciseCard(props: { exercise: Exercise; query: string }) {
   css`
@@ -47,9 +47,10 @@ export function ExerciseCard(props: { exercise: Exercise; query: string }) {
       font-weight: 800;
       padding: 0.22rem 0.5rem;
     }
-  `;
+  `
 
-  const typeLabel = () => (props.exercise.type === "scale" ? "Scale" : "Arpeggio");
+  const typeLabel = () =>
+    props.exercise.type === "scale" ? "Scale" : "Arpeggio"
 
   return (
     <article class="exercise-card">
@@ -70,8 +71,11 @@ export function ExerciseCard(props: { exercise: Exercise; query: string }) {
         </a>
       </h2>
       <p>
-        <HighlightedText text={props.exercise.notes.join(" - ")} query={props.query} />
+        <HighlightedText
+          text={props.exercise.notes.join(" - ")}
+          query={props.query}
+        />
       </p>
     </article>
-  );
+  )
 }

@@ -10,6 +10,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "lint": "biome check --write",
     "test": "pnpm test:unit && pnpm test:e2e",
     "test:e2e": "playwright test",
     "test:unit": "node --test tests/unit/*.test.ts"
@@ -20,6 +21,7 @@
     "solid-js": "1.9.13"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.1",
     "@playwright/test": "1.61.0",
     "@types/node": "25.9.3",
     "solid-styled": "0.12.1",

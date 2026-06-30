@@ -1,39 +1,43 @@
-import { For, Show, createSignal, onCleanup } from "solid-js";
-import { css } from "solid-styled";
-import { Staff } from "../common/Staff";
-import { PhIcon } from "../common/PhIcon";
-import {
-  ANSWER_OPTIONS,
-  CLEF_SETTINGS,
-  DURATION_OPTIONS,
-  accuracyPercent,
-  formatClock,
-  noteName,
-  randomClef,
-  randomNote,
-  visibleRows,
-  type AnswerRow,
-  type Clef,
-  type ClefSetting,
-  type Note,
-  type WrongAnswer
-} from "../common/sightReading";
+import { createSignal, For, onCleanup, Show } from "solid-js"
+import { css } from "solid-styled"
+import { PhIcon } from "../common/PhIcon"
 import {
   readSightReadingClefPreference,
   readSightReadingDurationPreference,
   writeSightReadingClefPreference,
-  writeSightReadingDurationPreference
-} from "../common/preferences";
+  writeSightReadingDurationPreference,
+} from "../common/preferences"
+import { Staff } from "../common/Staff"
+import {
+  ANSWER_OPTIONS,
+  type AnswerRow,
+  accuracyPercent,
+  CLEF_SETTINGS,
+  type Clef,
+  type ClefSetting,
+  DURATION_OPTIONS,
+  formatClock,
+  type Note,
+  noteName,
+  randomClef,
+  randomNote,
+  visibleRows,
+  type WrongAnswer,
+} from "../common/sightReading"
 
-type Phase = "setup" | "playing" | "results";
-type Prompt = { note: Note; clef: Clef; rows: Set<AnswerRow> };
+type Phase = "setup" | "playing" | "results"
+type Prompt = { note: Note; clef: Clef; rows: Set<AnswerRow> }
 
-const clefLabels: Record<ClefSetting, string> = { treble: "Treble", bass: "Bass", both: "Both" };
+const clefLabels: Record<ClefSetting, string> = {
+  treble: "Treble",
+  bass: "Bass",
+  both: "Both",
+}
 
 function makePrompt(setting: ClefSetting): Prompt {
-  const clef = randomClef(setting);
-  const note = randomNote(clef);
-  return { note, clef, rows: visibleRows(note) };
+  const clef = randomClef(setting)
+  const note = randomNote(clef)
+  return { note, clef, rows: visibleRows(note) }
 }
 
 export function SightReadingPage() {
@@ -237,97 +241,105 @@ export function SightReadingPage() {
         min-height: 2.6rem;
       }
     }
-  `;
+  `
 
-  const [clefSetting, setClefSetting] = createSignal<ClefSetting>(readSightReadingClefPreference());
-  const [duration, setDuration] = createSignal(readSightReadingDurationPreference());
-  const [phase, setPhase] = createSignal<Phase>("setup");
-  const [prompt, setPrompt] = createSignal<Prompt>(makePrompt(clefSetting()));
-  const [correct, setCorrect] = createSignal(0);
-  const [total, setTotal] = createSignal(0);
-  const [wrong, setWrong] = createSignal<WrongAnswer[]>([]);
-  const [remaining, setRemaining] = createSignal(0);
-  const [elapsed, setElapsed] = createSignal(0);
-  const [feedback, setFeedback] = createSignal<"correct" | "wrong" | null>(null);
+  const [clefSetting, setClefSetting] = createSignal<ClefSetting>(
+    readSightReadingClefPreference(),
+  )
+  const [duration, setDuration] = createSignal(
+    readSightReadingDurationPreference(),
+  )
+  const [phase, setPhase] = createSignal<Phase>("setup")
+  const [prompt, setPrompt] = createSignal<Prompt>(makePrompt(clefSetting()))
+  const [correct, setCorrect] = createSignal(0)
+  const [total, setTotal] = createSignal(0)
+  const [wrong, setWrong] = createSignal<WrongAnswer[]>([])
+  const [remaining, setRemaining] = createSignal(0)
+  const [elapsed, setElapsed] = createSignal(0)
+  const [feedback, setFeedback] = createSignal<"correct" | "wrong" | null>(null)
 
-  let timerId: number | undefined;
-  let feedbackTimer: number | undefined;
-  let startedAt = 0;
+  let timerId: number | undefined
+  let feedbackTimer: number | undefined
+  let startedAt = 0
 
   const stopTimer = () => {
     if (timerId !== undefined) {
-      window.clearInterval(timerId);
-      timerId = undefined;
+      window.clearInterval(timerId)
+      timerId = undefined
     }
-  };
+  }
 
   const endGame = () => {
-    stopTimer();
-    setPhase("results");
-  };
+    stopTimer()
+    setPhase("results")
+  }
 
   const startTimer = () => {
-    stopTimer();
-    startedAt = performance.now();
+    stopTimer()
+    startedAt = performance.now()
     const tick = () => {
-      const seconds = Math.floor((performance.now() - startedAt) / 1000);
+      const seconds = Math.floor((performance.now() - startedAt) / 1000)
       if (duration() === 0) {
-        setElapsed(seconds);
-        return;
+        setElapsed(seconds)
+        return
       }
-      const left = duration() - seconds;
-      setRemaining(Math.max(0, left));
+      const left = duration() - seconds
+      setRemaining(Math.max(0, left))
       if (left <= 0) {
-        endGame();
+        endGame()
       }
-    };
-    tick();
-    timerId = window.setInterval(tick, 200);
-  };
+    }
+    tick()
+    timerId = window.setInterval(tick, 200)
+  }
 
   const start = () => {
-    writeSightReadingClefPreference(clefSetting());
-    writeSightReadingDurationPreference(duration());
-    setCorrect(0);
-    setTotal(0);
-    setWrong([]);
-    setRemaining(duration());
-    setElapsed(0);
-    setPrompt(makePrompt(clefSetting()));
-    setPhase("playing");
-    startTimer();
-  };
+    writeSightReadingClefPreference(clefSetting())
+    writeSightReadingDurationPreference(duration())
+    setCorrect(0)
+    setTotal(0)
+    setWrong([])
+    setRemaining(duration())
+    setElapsed(0)
+    setPrompt(makePrompt(clefSetting()))
+    setPhase("playing")
+    startTimer()
+  }
 
   const answer = (name: string) => {
-    if (feedback()) return; // Ignore clicks while the answered note is still flashing.
-    const current = prompt();
-    setTotal((value) => value + 1);
-    const isCorrect = name === noteName(current.note);
+    if (feedback()) return // Ignore clicks while the answered note is still flashing.
+    const current = prompt()
+    setTotal((value) => value + 1)
+    const isCorrect = name === noteName(current.note)
     if (isCorrect) {
-      setCorrect((value) => value + 1);
+      setCorrect((value) => value + 1)
     } else {
-      setWrong((list) => [...list, { note: current.note, clef: current.clef, picked: name }]);
+      setWrong((list) => [
+        ...list,
+        { note: current.note, clef: current.clef, picked: name },
+      ])
     }
     // Flash feedback on the answered note, then advance to the next one.
-    setFeedback(isCorrect ? "correct" : "wrong");
-    window.clearTimeout(feedbackTimer);
+    setFeedback(isCorrect ? "correct" : "wrong")
+    window.clearTimeout(feedbackTimer)
     feedbackTimer = window.setTimeout(() => {
-      setFeedback(null);
-      setPrompt(makePrompt(clefSetting()));
-    }, 450);
-  };
+      setFeedback(null)
+      setPrompt(makePrompt(clefSetting()))
+    }, 450)
+  }
 
   const backToSetup = () => {
-    stopTimer();
-    setPhase("setup");
-  };
+    stopTimer()
+    setPhase("setup")
+  }
 
-  const timeLabel = () => formatClock(duration() === 0 ? elapsed() : remaining());
+  const timeLabel = () =>
+    formatClock(duration() === 0 ? elapsed() : remaining())
 
   onCleanup(() => {
-    stopTimer();
-    window.clearTimeout(feedbackTimer);
-  });
+    stopTimer()
+    window.clearTimeout(feedbackTimer)
+  })
 
   return (
     <section class="sight-reading stack" aria-label="Sight reading">
@@ -335,34 +347,44 @@ export function SightReadingPage() {
         <div class="hero-copy stack">
           <p class="eyebrow">Note identification</p>
           <h1>Sight Reading</h1>
-          <p>Name each note as it appears. Pick a clef and a length, then start.</p>
+          <p>
+            Name each note as it appears. Pick a clef and a length, then start.
+          </p>
         </div>
 
         <div class="panel">
           <div class="field">
             <span class="field-label">Clef</span>
-            <div class="segmented" role="group" aria-label="Clef">
+            <fieldset class="segmented" aria-label="Clef">
               <For each={CLEF_SETTINGS}>
                 {(option) => (
-                  <button type="button" aria-pressed={clefSetting() === option} onClick={() => setClefSetting(option)}>
+                  <button
+                    type="button"
+                    aria-pressed={clefSetting() === option}
+                    onClick={() => setClefSetting(option)}
+                  >
                     {clefLabels[option]}
                   </button>
                 )}
               </For>
-            </div>
+            </fieldset>
           </div>
 
           <div class="field">
             <span class="field-label">Length</span>
-            <div class="segmented" role="group" aria-label="Length">
+            <fieldset class="segmented" aria-label="Length">
               <For each={DURATION_OPTIONS}>
                 {(option) => (
-                  <button type="button" aria-pressed={duration() === option.seconds} onClick={() => setDuration(option.seconds)}>
+                  <button
+                    type="button"
+                    aria-pressed={duration() === option.seconds}
+                    onClick={() => setDuration(option.seconds)}
+                  >
                     {option.label}
                   </button>
                 )}
               </For>
-            </div>
+            </fieldset>
           </div>
 
           <button type="button" class="primary-button" onClick={start}>
@@ -392,25 +414,39 @@ export function SightReadingPage() {
             panel: true,
             "panel-no-padding": true,
             "flash-correct": feedback() === "correct",
-            "flash-wrong": feedback() === "wrong"
+            "flash-wrong": feedback() === "wrong",
           }}
         >
           <Show when={feedback()}>
             {(mark) => (
-              <span class={`feedback-mark feedback-${mark()}`} aria-hidden="true">
-                <PhIcon name={mark() === "correct" ? "check" : "x"} weight="bold" size={22} />
+              <span
+                class={`feedback-mark feedback-${mark()}`}
+                aria-hidden="true"
+              >
+                <PhIcon
+                  name={mark() === "correct" ? "check" : "x"}
+                  weight="bold"
+                  size={22}
+                />
               </span>
             )}
           </Show>
           <Staff note={prompt().note} clef={prompt().clef} />
         </div>
 
-        <div class="answer-grid" role="group" aria-label="Note options">
-          <For each={ANSWER_OPTIONS.filter((option) => prompt().rows.has(option.row))}>
+        <fieldset class="answer-grid" aria-label="Note options">
+          <For
+            each={ANSWER_OPTIONS.filter((option) =>
+              prompt().rows.has(option.row),
+            )}
+          >
             {(option) => (
               <button
                 type="button"
-                style={{ "grid-column": String(option.column), "grid-row": String(option.row) }}
+                style={{
+                  "grid-column": String(option.column),
+                  "grid-row": String(option.row),
+                }}
                 aria-label={`Answer ${option.name}`}
                 onClick={() => answer(option.name)}
               >
@@ -418,7 +454,7 @@ export function SightReadingPage() {
               </button>
             )}
           </For>
-        </div>
+        </fieldset>
 
         <button type="button" class="ghost-button" onClick={endGame}>
           End
@@ -429,7 +465,10 @@ export function SightReadingPage() {
         <div class="hero-copy stack">
           <p class="eyebrow">Results</p>
           <h1>{correct()} correct</h1>
-          <p>{accuracyPercent(correct(), total())}% accuracy over {total()} notes.</p>
+          <p>
+            {accuracyPercent(correct(), total())}% accuracy over {total()}{" "}
+            notes.
+          </p>
         </div>
 
         <div class="segmented">
@@ -444,7 +483,9 @@ export function SightReadingPage() {
         <div class="panel">
           <Show
             when={wrong().length > 0}
-            fallback={<p class="perfect">No mistakes. Every note named correctly.</p>}
+            fallback={
+              <p class="perfect">No mistakes. Every note named correctly.</p>
+            }
           >
             <span class="field-label">Missed notes</span>
             <ul class="results-list">
@@ -453,8 +494,13 @@ export function SightReadingPage() {
                   <li>
                     <Staff note={item.note} clef={item.clef} />
                     <span class="missed-names">
-                      <span>You picked <span class="picked">{item.picked}</span></span>
-                      <span>Answer <span class="correct">{noteName(item.note)}</span></span>
+                      <span>
+                        You picked <span class="picked">{item.picked}</span>
+                      </span>
+                      <span>
+                        Answer{" "}
+                        <span class="correct">{noteName(item.note)}</span>
+                      </span>
                     </span>
                   </li>
                 )}
@@ -464,5 +510,5 @@ export function SightReadingPage() {
         </div>
       </Show>
     </section>
-  );
+  )
 }

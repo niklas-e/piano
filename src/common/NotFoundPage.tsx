@@ -1,4 +1,4 @@
-import { css } from "solid-styled";
+import { css } from "solid-styled"
 
 export function NotFoundPage() {
   css`
@@ -7,7 +7,7 @@ export function NotFoundPage() {
       flex-wrap: wrap;
       gap: 0.75rem;
     }
-  `;
+  `
 
   return (
     <section aria-labelledby="not-found-heading">
@@ -18,5 +18,5 @@ export function NotFoundPage() {
         <a href="/metronome">Go to metronome</a>
       </div>
     </section>
-  );
+  )
 }

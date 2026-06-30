@@ -1,9 +1,16 @@
-import { Show, createSignal, onCleanup, onMount } from "solid-js";
-import { css } from "solid-styled";
-import { clampBpm, createMetronomeEngine, formatElapsed, msPerBeat, tapTempoBpm, TAP_RESET_GAP_MS } from "./metronome";
-import { PhIcon } from "./PhIcon";
-import { readBpmPreference, writeBpmPreference } from "./preferences";
-import { StepperButton } from "./StepperButton";
+import { createSignal, onCleanup, onMount, Show } from "solid-js"
+import { css } from "solid-styled"
+import {
+  clampBpm,
+  createMetronomeEngine,
+  formatElapsed,
+  msPerBeat,
+  TAP_RESET_GAP_MS,
+  tapTempoBpm,
+} from "./metronome"
+import { PhIcon } from "./PhIcon"
+import { readBpmPreference, writeBpmPreference } from "./preferences"
+import { StepperButton } from "./StepperButton"
 
 export function MetronomeControls(props: { variant: "full" | "compact" }) {
   css`
@@ -230,86 +237,95 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
         gap: 0.35rem;
       }
     }
-  `;
+  `
 
-  const [bpm, setBpm] = createSignal(readBpmPreference());
-  const [isRunning, setIsRunning] = createSignal(false);
-  const [pulseCount, setPulseCount] = createSignal(0);
-  const [audioError, setAudioError] = createSignal<string | undefined>();
-  const engine = createMetronomeEngine(bpm());
+  const [bpm, setBpm] = createSignal(readBpmPreference())
+  const [isRunning, setIsRunning] = createSignal(false)
+  const [pulseCount, setPulseCount] = createSignal(0)
+  const [audioError, setAudioError] = createSignal<string | undefined>()
+  const engine = createMetronomeEngine(bpm())
 
-  const [elapsedMs, setElapsedMs] = createSignal(0);
-  let tapTimes: number[] = [];
-  let elapsedTimerId: number | undefined;
-  let elapsedStartedAt = 0;
+  const [elapsedMs, setElapsedMs] = createSignal(0)
+  let tapTimes: number[] = []
+  let elapsedTimerId: number | undefined
+  let elapsedStartedAt = 0
 
   const stopElapsedTimer = () => {
     if (elapsedTimerId !== undefined) {
-      window.clearInterval(elapsedTimerId);
-      elapsedTimerId = undefined;
+      window.clearInterval(elapsedTimerId)
+      elapsedTimerId = undefined
     }
-  };
+  }
 
   const startElapsedTimer = () => {
-    stopElapsedTimer();
-    elapsedStartedAt = performance.now();
-    setElapsedMs(0);
+    stopElapsedTimer()
+    elapsedStartedAt = performance.now()
+    setElapsedMs(0)
     elapsedTimerId = window.setInterval(() => {
-      setElapsedMs(performance.now() - elapsedStartedAt);
-    }, 250);
-  };
+      setElapsedMs(performance.now() - elapsedStartedAt)
+    }, 250)
+  }
 
   const handleTap = () => {
-    const now = performance.now();
-    if (tapTimes.length > 0 && now - tapTimes[tapTimes.length - 1] > TAP_RESET_GAP_MS) {
-      tapTimes = [];
+    const now = performance.now()
+    if (
+      tapTimes.length > 0 &&
+      now - tapTimes[tapTimes.length - 1] > TAP_RESET_GAP_MS
+    ) {
+      tapTimes = []
     }
-    tapTimes.push(now);
+    tapTimes.push(now)
     if (tapTimes.length > 5) {
-      tapTimes = tapTimes.slice(-5);
+      tapTimes = tapTimes.slice(-5)
     }
-    const nextBpm = tapTempoBpm(tapTimes);
+    const nextBpm = tapTempoBpm(tapTimes)
     if (nextBpm !== null) {
-      updateBpm(nextBpm);
+      updateBpm(nextBpm)
     }
-  };
+  }
 
   const updateBpm = (value: number) => {
-    const nextBpm = clampBpm(value);
-    setBpm(nextBpm);
-    engine.setBpm(nextBpm);
-    writeBpmPreference(nextBpm);
-  };
+    const nextBpm = clampBpm(value)
+    setBpm(nextBpm)
+    engine.setBpm(nextBpm)
+    writeBpmPreference(nextBpm)
+  }
 
   const toggle = () => {
     if (isRunning()) {
-      engine.stop();
-      setIsRunning(false);
-      stopElapsedTimer();
-      setElapsedMs(0);
-      return;
+      engine.stop()
+      setIsRunning(false)
+      stopElapsedTimer()
+      setElapsedMs(0)
+      return
     }
 
-    engine.start();
-    setAudioError(engine.getAudioError());
-    setIsRunning(true);
-    startElapsedTimer();
-  };
+    engine.start()
+    setAudioError(engine.getAudioError())
+    setIsRunning(true)
+    startElapsedTimer()
+  }
 
   onMount(() => {
-    const unsubscribe = engine.onPulse((beat) => setPulseCount(beat));
-    const unsubscribeAudioError = engine.onAudioError(setAudioError);
+    const unsubscribe = engine.onPulse((beat) => setPulseCount(beat))
+    const unsubscribeAudioError = engine.onAudioError(setAudioError)
     onCleanup(() => {
-      stopElapsedTimer();
-      unsubscribe();
-      unsubscribeAudioError();
-      engine.dispose();
-    });
-  });
+      stopElapsedTimer()
+      unsubscribe()
+      unsubscribeAudioError()
+      engine.dispose()
+    })
+  })
 
-  const isCompact = () => props.variant === "compact";
-  const pulseAnimationDuration = () => Math.min(300, Math.max(120, Math.round(msPerBeat(bpm()) * 0.35)));
-  const pulseClass = () => (pulseCount() === 0 ? "" : pulseCount() % 2 === 0 ? " pulse-even" : " pulse-odd");
+  const isCompact = () => props.variant === "compact"
+  const pulseAnimationDuration = () =>
+    Math.min(300, Math.max(120, Math.round(msPerBeat(bpm()) * 0.35)))
+  const pulseClass = () =>
+    pulseCount() === 0
+      ? ""
+      : pulseCount() % 2 === 0
+        ? " pulse-even"
+        : " pulse-odd"
 
   return (
     <Show
@@ -322,14 +338,26 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
             data-beat={pulseCount()}
           >
             <strong class="bpm-value">{bpm()}</strong>
-            <small class="elapsed" aria-hidden="true">{formatElapsed(elapsedMs())}</small>
+            <small class="elapsed" aria-hidden="true">
+              {formatElapsed(elapsedMs())}
+            </small>
           </div>
 
           <div class="tempo-bar">
-            <StepperButton variant="pill" direction="decrement" ariaLabel="-5 BPM" onClick={() => updateBpm(bpm() - 5)}>
+            <StepperButton
+              variant="pill"
+              direction="decrement"
+              ariaLabel="-5 BPM"
+              onClick={() => updateBpm(bpm() - 5)}
+            >
               <span class="stepper-button-label">-5</span>
             </StepperButton>
-            <StepperButton variant="pill" direction="decrement" ariaLabel="-1 BPM" onClick={() => updateBpm(bpm() - 1)} />
+            <StepperButton
+              variant="pill"
+              direction="decrement"
+              ariaLabel="-1 BPM"
+              onClick={() => updateBpm(bpm() - 1)}
+            />
             <input
               class="tempo-field"
               aria-label="Tempo in BPM"
@@ -340,8 +368,18 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
               value={bpm()}
               onChange={(event) => updateBpm(Number(event.currentTarget.value))}
             />
-            <StepperButton variant="pill" direction="increment" ariaLabel="+1 BPM" onClick={() => updateBpm(bpm() + 1)} />
-            <StepperButton variant="pill" direction="increment" ariaLabel="+5 BPM" onClick={() => updateBpm(bpm() + 5)}>
+            <StepperButton
+              variant="pill"
+              direction="increment"
+              ariaLabel="+1 BPM"
+              onClick={() => updateBpm(bpm() + 1)}
+            />
+            <StepperButton
+              variant="pill"
+              direction="increment"
+              ariaLabel="+5 BPM"
+              onClick={() => updateBpm(bpm() + 5)}
+            >
               <span class="stepper-button-label">+5</span>
             </StepperButton>
           </div>
@@ -355,35 +393,67 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
             >
               {isRunning() ? "Stop metronome" : "Start metronome"}
             </button>
-            <button type="button" class="tap-button" onClick={handleTap} aria-label="Tap tempo">
-              <PhIcon name="metronome" aria-hidden="true" size={18} weight="bold" />
+            <button
+              type="button"
+              class="tap-button"
+              onClick={handleTap}
+              aria-label="Tap tempo"
+            >
+              <PhIcon
+                name="metronome"
+                aria-hidden="true"
+                size={18}
+                weight="bold"
+              />
               Tap
             </button>
-            <Show when={audioError()}>{(message) => <p class="audio-message">{message()}</p>}</Show>
+            <Show when={audioError()}>
+              {(message) => <p class="audio-message">{message()}</p>}
+            </Show>
           </div>
         </div>
       }
     >
       <div class="metronome-card compact">
-        <div class="seg-control" role="group" aria-label="Tempo in BPM">
-          <StepperButton variant="segment" direction="decrement" ariaLabel="-5 BPM" onClick={() => updateBpm(bpm() - 5)}>
+        <fieldset class="seg-control" aria-label="Tempo in BPM">
+          <StepperButton
+            variant="segment"
+            direction="decrement"
+            ariaLabel="-5 BPM"
+            onClick={() => updateBpm(bpm() - 5)}
+          >
             <span class="stepper-button-label">-5</span>
           </StepperButton>
-          <StepperButton variant="segment" direction="decrement" ariaLabel="-1 BPM" onClick={() => updateBpm(bpm() - 1)} />
+          <StepperButton
+            variant="segment"
+            direction="decrement"
+            ariaLabel="-1 BPM"
+            onClick={() => updateBpm(bpm() - 1)}
+          />
           <span class="seg-readout bpm-readout">
             <strong>{bpm()}</strong>
           </span>
-          <StepperButton variant="segment" direction="increment" ariaLabel="+1 BPM" onClick={() => updateBpm(bpm() + 1)} />
-          <StepperButton variant="segment" direction="increment" ariaLabel="+5 BPM" onClick={() => updateBpm(bpm() + 5)}>
+          <StepperButton
+            variant="segment"
+            direction="increment"
+            ariaLabel="+1 BPM"
+            onClick={() => updateBpm(bpm() + 1)}
+          />
+          <StepperButton
+            variant="segment"
+            direction="increment"
+            ariaLabel="+5 BPM"
+            onClick={() => updateBpm(bpm() + 5)}
+          >
             <span class="stepper-button-label">+5</span>
           </StepperButton>
-        </div>
+        </fieldset>
 
         <span
           class={`beat-dot ${isRunning() ? "is-running" : ""}${isRunning() ? pulseClass() : ""}`}
           style={{ "--pulse-duration": `${pulseAnimationDuration()}ms` }}
+          role="status"
           aria-label={`Beat ${pulseCount()}`}
-          aria-live="polite"
         />
 
         <button
@@ -396,5 +466,5 @@ export function MetronomeControls(props: { variant: "full" | "compact" }) {
         </button>
       </div>
     </Show>
-  );
+  )
 }

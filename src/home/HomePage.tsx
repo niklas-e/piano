@@ -1,26 +1,26 @@
-import { For } from "solid-js";
-import { css } from "solid-styled";
+import { For } from "solid-js"
+import { css } from "solid-styled"
 
 const sections = [
   {
     title: "Exercises",
     description: "Browse technical exercises for focused piano practice.",
     meta: "Scales and arpeggios",
-    href: "/exercises"
+    href: "/exercises",
   },
   {
     title: "Metronome",
     description: "Practice with a steady pulse and adjustable tempo.",
     meta: "Tempo practice",
-    href: "/metronome"
+    href: "/metronome",
   },
   {
     title: "Sight Reading",
     description: "Identify notes on the staff against the clock.",
     meta: "Note recognition",
-    href: "/sight-reading"
-  }
-] as const;
+    href: "/sight-reading",
+  },
+] as const
 
 export function HomePage() {
   css`
@@ -84,17 +84,20 @@ export function HomePage() {
         min-height: auto;
       }
     }
-  `;
+  `
 
   return (
     <section class="hero stack" aria-labelledby="home-heading">
       <div class="hero-copy stack">
         <p class="eyebrow">Lean piano practice tools</p>
         <h1 id="home-heading">Piano Practice</h1>
-        <p>Browse technical exercises, inspect fingering, and practice with a focused metronome.</p>
+        <p>
+          Browse technical exercises, inspect fingering, and practice with a
+          focused metronome.
+        </p>
       </div>
 
-      <div class="launcher-grid" aria-label="Practice tools">
+      <nav class="launcher-grid" aria-label="Practice tools">
         <For each={sections}>
           {(section) => (
             <a class="launcher-card" href={section.href}>
@@ -104,7 +107,7 @@ export function HomePage() {
             </a>
           )}
         </For>
-      </div>
+      </nav>
     </section>
-  );
+  )
 }

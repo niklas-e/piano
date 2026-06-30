@@ -1,4 +1,4 @@
-import { css } from "solid-styled";
+import { css } from "solid-styled"
 
 /**
  * Global design tokens, CSS reset, and the few primitives that are genuinely
@@ -24,6 +24,10 @@ export function GlobalStyles() {
         margin: 0;
         padding: 0;
         border: 0;
+      }
+
+      fieldset {
+        min-inline-size: 0;
       }
 
       body {
@@ -103,7 +107,7 @@ export function GlobalStyles() {
         color: #17130f;
       }
     }
-  `;
+  `
 
-  return null;
+  return null
 }

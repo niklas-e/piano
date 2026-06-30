@@ -1,14 +1,14 @@
-import { Match, Switch, createSignal, onCleanup, onMount } from "solid-js";
-import { css } from "solid-styled";
-import { parsePathname } from "./common/routes";
-import { AppHeader } from "./common/AppHeader";
-import { GlobalStyles } from "./common/GlobalStyles";
-import { HomePage } from "./home/HomePage";
-import { ExercisesPage } from "./exercises/ExercisesPage";
-import { ExercisePage } from "./exercise/ExercisePage";
-import { MetronomePage } from "./metronome/MetronomePage";
-import { SightReadingPage } from "./sightreading/SightReadingPage";
-import { NotFoundPage } from "./common/NotFoundPage";
+import { createSignal, Match, onCleanup, onMount, Switch } from "solid-js"
+import { css } from "solid-styled"
+import { AppHeader } from "./common/AppHeader"
+import { GlobalStyles } from "./common/GlobalStyles"
+import { NotFoundPage } from "./common/NotFoundPage"
+import { parsePathname } from "./common/routes"
+import { ExercisePage } from "./exercise/ExercisePage"
+import { ExercisesPage } from "./exercises/ExercisesPage"
+import { HomePage } from "./home/HomePage"
+import { MetronomePage } from "./metronome/MetronomePage"
+import { SightReadingPage } from "./sightreading/SightReadingPage"
 
 export default function App() {
   css`
@@ -27,22 +27,22 @@ export default function App() {
         padding-inline: 0.85rem;
       }
     }
-  `;
+  `
 
-  const [pathname, setPathname] = createSignal(window.location.pathname);
-  const route = () => parsePathname(pathname());
+  const [pathname, setPathname] = createSignal(window.location.pathname)
+  const route = () => parsePathname(pathname())
 
   onMount(() => {
-    const handlePopState = () => setPathname(window.location.pathname);
-    window.addEventListener("popstate", handlePopState);
-    onCleanup(() => window.removeEventListener("popstate", handlePopState));
-  });
+    const handlePopState = () => setPathname(window.location.pathname)
+    window.addEventListener("popstate", handlePopState)
+    onCleanup(() => window.removeEventListener("popstate", handlePopState))
+  })
 
   const navigate = (href: string) => (event: MouseEvent) => {
-    event.preventDefault();
-    window.history.pushState({}, "", href);
-    setPathname(window.location.pathname);
-  };
+    event.preventDefault()
+    window.history.pushState({}, "", href)
+    setPathname(window.location.pathname)
+  }
 
   return (
     <div class="app-shell">
@@ -59,8 +59,10 @@ export default function App() {
           </Match>
           <Match when={route().name === "exercise" && route()}>
             {(matchedRoute) => {
-              const currentRoute = matchedRoute();
-              return currentRoute.name === "exercise" ? <ExercisePage id={currentRoute.id} /> : null;
+              const currentRoute = matchedRoute()
+              return currentRoute.name === "exercise" ? (
+                <ExercisePage id={currentRoute.id} />
+              ) : null
             }}
           </Match>
           <Match when={route().name === "metronome"}>
@@ -75,5 +77,5 @@ export default function App() {
         </Switch>
       </main>
     </div>
-  );
+  )
 }

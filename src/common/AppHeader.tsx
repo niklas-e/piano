@@ -1,15 +1,18 @@
-import { For, createEffect, createSignal } from "solid-js";
-import { css } from "solid-styled";
-import { PhIcon } from "./PhIcon";
-import { getRouteHeader, isPrimaryNavigationRoute, type Route } from "./routes";
+import { createEffect, createSignal, For } from "solid-js"
+import { css } from "solid-styled"
+import { PhIcon } from "./PhIcon"
+import { getRouteHeader, isPrimaryNavigationRoute, type Route } from "./routes"
 
 const primaryNavigationItems = [
   { href: "/exercises", label: "Exercises" },
   { href: "/metronome", label: "Metronome" },
-  { href: "/sight-reading", label: "Sight Reading" }
-] as const;
+  { href: "/sight-reading", label: "Sight Reading" },
+] as const
 
-export function AppHeader(props: { route: Route; navigate: (href: string) => (event: MouseEvent) => void }) {
+export function AppHeader(props: {
+  route: Route
+  navigate: (href: string) => (event: MouseEvent) => void
+}) {
   css`
     .site-header {
       align-items: center;
@@ -80,28 +83,32 @@ export function AppHeader(props: { route: Route; navigate: (href: string) => (ev
         width: 100%;
       }
     }
-  `;
+  `
 
-  const [isMenuOpen, setIsMenuOpen] = createSignal(false);
-  const headerLink = () => getRouteHeader(props.route);
+  const [isMenuOpen, setIsMenuOpen] = createSignal(false)
+  const headerLink = () => getRouteHeader(props.route)
 
   createEffect(() => {
-    props.route;
-    setIsMenuOpen(false);
-  });
+    props.route
+    setIsMenuOpen(false)
+  })
 
   const handleNavigation = (href: string) => {
-    const navigate = props.navigate(href);
+    const navigate = props.navigate(href)
 
     return (event: MouseEvent) => {
-      setIsMenuOpen(false);
-      navigate(event);
-    };
-  };
+      setIsMenuOpen(false)
+      navigate(event)
+    }
+  }
 
   return (
     <header class="site-header">
-      <a class="site-title" href={headerLink().href} onClick={handleNavigation(headerLink().href)}>
+      <a
+        class="site-title"
+        href={headerLink().href}
+        onClick={handleNavigation(headerLink().href)}
+      >
         {headerLink().title}
       </a>
 
@@ -110,19 +117,33 @@ export function AppHeader(props: { route: Route; navigate: (href: string) => (ev
         class="menu-toggle"
         aria-controls="primary-navigation"
         aria-expanded={isMenuOpen()}
-        aria-label={isMenuOpen() ? "Close navigation menu" : "Open navigation menu"}
+        aria-label={
+          isMenuOpen() ? "Close navigation menu" : "Open navigation menu"
+        }
         onClick={() => setIsMenuOpen((open) => !open)}
       >
-        {isMenuOpen() ? <PhIcon name="x" aria-hidden="true" size={20} weight="bold" /> : <PhIcon name="list" aria-hidden="true" size={20} weight="bold" />}
+        {isMenuOpen() ? (
+          <PhIcon name="x" aria-hidden="true" size={20} weight="bold" />
+        ) : (
+          <PhIcon name="list" aria-hidden="true" size={20} weight="bold" />
+        )}
       </button>
 
-      <nav id="primary-navigation" class={`site-nav${isMenuOpen() ? " is-open" : ""}`} aria-label="Primary navigation">
+      <nav
+        id="primary-navigation"
+        class={`site-nav${isMenuOpen() ? " is-open" : ""}`}
+        aria-label="Primary navigation"
+      >
         <For each={primaryNavigationItems}>
           {(item) => (
             <a
               href={item.href}
               onClick={handleNavigation(item.href)}
-              aria-current={isPrimaryNavigationRoute(props.route, item.href) ? "page" : undefined}
+              aria-current={
+                isPrimaryNavigationRoute(props.route, item.href)
+                  ? "page"
+                  : undefined
+              }
             >
               {item.label}
             </a>
@@ -130,5 +151,5 @@ export function AppHeader(props: { route: Route; navigate: (href: string) => (ev
         </For>
       </nav>
     </header>
-  );
+  )
 }

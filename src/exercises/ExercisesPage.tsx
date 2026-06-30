@@ -1,14 +1,14 @@
-import { For, Show, createMemo, createSignal } from "solid-js";
-import { css } from "solid-styled";
-import { PhIcon } from "../common/PhIcon";
-import { exercises, getExerciseById, type Exercise } from "../common/exercises";
+import { createMemo, createSignal, For, Show } from "solid-js"
+import { css } from "solid-styled"
+import { type Exercise, exercises, getExerciseById } from "../common/exercises"
+import { PhIcon } from "../common/PhIcon"
 import {
+  type ExerciseTypeFilter,
   readExerciseTypeFilterPreference,
   readLastExerciseIdPreference,
   writeExerciseTypeFilterPreference,
-  type ExerciseTypeFilter
-} from "../common/preferences";
-import { ExerciseCard } from "./ExerciseCard";
+} from "../common/preferences"
+import { ExerciseCard } from "./ExerciseCard"
 
 export function ExercisesPage() {
   css`
@@ -81,30 +81,39 @@ export function ExercisesPage() {
         grid-template-columns: 1fr;
       }
     }
-  `;
+  `
 
-  const [search, setSearch] = createSignal("");
-  const [typeFilter, setTypeFilter] = createSignal<ExerciseTypeFilter>(readExerciseTypeFilterPreference());
+  const [search, setSearch] = createSignal("")
+  const [typeFilter, setTypeFilter] = createSignal<ExerciseTypeFilter>(
+    readExerciseTypeFilterPreference(),
+  )
   const lastExercise = () => {
-    const id = readLastExerciseIdPreference();
-    return id ? getExerciseById(id) : undefined;
-  };
+    const id = readLastExerciseIdPreference()
+    return id ? getExerciseById(id) : undefined
+  }
   const filteredExercises = createMemo(() => {
-    const normalizedSearch = search().trim().toLowerCase();
-    const selectedType = typeFilter();
+    const normalizedSearch = search().trim().toLowerCase()
+    const selectedType = typeFilter()
 
     return exercises
-      .map((exercise) => ({ exercise, rank: rankExercise(exercise, normalizedSearch) }))
-      .filter(({ exercise, rank }) => (selectedType === "all" || exercise.type === selectedType) && Number.isFinite(rank))
+      .map((exercise) => ({
+        exercise,
+        rank: rankExercise(exercise, normalizedSearch),
+      }))
+      .filter(
+        ({ exercise, rank }) =>
+          (selectedType === "all" || exercise.type === selectedType) &&
+          Number.isFinite(rank),
+      )
       .sort((left, right) => left.rank - right.rank)
-      .map(({ exercise }) => exercise);
-  });
+      .map(({ exercise }) => exercise)
+  })
 
   const updateTypeFilter = (value: string) => {
-    const nextValue = value as ExerciseTypeFilter;
-    setTypeFilter(nextValue);
-    writeExerciseTypeFilterPreference(nextValue);
-  };
+    const nextValue = value as ExerciseTypeFilter
+    setTypeFilter(nextValue)
+    writeExerciseTypeFilterPreference(nextValue)
+  }
 
   return (
     <section aria-label="Exercises" class="stack">
@@ -120,7 +129,12 @@ export function ExercisesPage() {
       <div class="catalog-controls">
         <label>
           <div class="search-field">
-            <PhIcon name="magnifying-glass" aria-hidden="true" size={18} weight="bold" />
+            <PhIcon
+              name="magnifying-glass"
+              aria-hidden="true"
+              size={18}
+              weight="bold"
+            />
             <input
               value={search()}
               onInput={(event) => setSearch(event.currentTarget.value)}
@@ -143,7 +157,7 @@ export function ExercisesPage() {
         </label>
       </div>
 
-      <div class="exercise-grid" aria-label="Exercise catalog">
+      <div class="exercise-grid">
         <For each={filteredExercises()}>
           {(exercise) => <ExerciseCard exercise={exercise} query={search()} />}
         </For>
@@ -153,18 +167,18 @@ export function ExercisesPage() {
         <p class="empty-state">No exercises match the current search.</p>
       </Show>
     </section>
-  );
+  )
 }
 
 function rankExercise(exercise: Exercise, query: string): number {
-  const normalizedQuery = query.trim().toLowerCase();
+  const normalizedQuery = query.trim().toLowerCase()
 
   if (normalizedQuery.length === 0) {
-    return 0;
+    return 0
   }
 
   if (exercise.title.toLowerCase().includes(normalizedQuery)) {
-    return 0;
+    return 0
   }
 
   if (
@@ -172,12 +186,14 @@ function rankExercise(exercise: Exercise, query: string): number {
     exercise.type.toLowerCase().includes(normalizedQuery) ||
     exercise.quality.toLowerCase().includes(normalizedQuery)
   ) {
-    return 1;
+    return 1
   }
 
-  if (exercise.notes.some((note) => note.toLowerCase().includes(normalizedQuery))) {
-    return 2;
+  if (
+    exercise.notes.some((note) => note.toLowerCase().includes(normalizedQuery))
+  ) {
+    return 2
   }
 
-  return Infinity;
+  return Infinity
 }

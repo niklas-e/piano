@@ -1,10 +1,10 @@
-import { For } from "solid-js";
-import { css } from "solid-styled";
-import { isHighlightedKey, whiteIndexForKey, type PianoKey } from "./keyboard";
+import { For } from "solid-js"
+import { css } from "solid-styled"
+import { isHighlightedKey, type PianoKey, whiteIndexForKey } from "./keyboard"
 
 export function KeyboardMinimap(props: {
-  keys: readonly PianoKey[];
-  keyIds: readonly string[];
+  keys: readonly PianoKey[]
+  keyIds: readonly string[]
 }) {
   css`
     .minimap {
@@ -40,18 +40,23 @@ export function KeyboardMinimap(props: {
     .minimap-key.black.is-highlighted {
       background: #8a4a1f;
     }
-  `;
+  `
 
-  const whiteCount = props.keys.filter((key) => key.type === "white").length;
-  const unit = 100 / whiteCount;
-  const blackWidthRatio = 1.65 / 2.8;
+  const whiteCount = props.keys.filter((key) => key.type === "white").length
+  const unit = 100 / whiteCount
+  const blackWidthRatio = 1.65 / 2.8
 
   return (
-    <div class="minimap" data-testid="keyboard-minimap" role="img" aria-label="Exercise position on the full keyboard">
+    <div
+      class="minimap"
+      data-testid="keyboard-minimap"
+      role="img"
+      aria-label="Exercise position on the full keyboard"
+    >
       <For each={props.keys}>
         {(key, index) => {
-          const highlighted = () => isHighlightedKey(key, props.keyIds);
-          const widthFactor = key.type === "white" ? 1 : blackWidthRatio;
+          const highlighted = () => isHighlightedKey(key, props.keyIds)
+          const widthFactor = key.type === "white" ? 1 : blackWidthRatio
 
           return (
             <div
@@ -59,12 +64,12 @@ export function KeyboardMinimap(props: {
               data-testid={`minimap-key-${key.id}`}
               style={{
                 left: `${whiteIndexForKey(props.keys, index()) * unit}%`,
-                width: `${unit * widthFactor}%`
+                width: `${unit * widthFactor}%`,
               }}
             />
-          );
+          )
         }}
       </For>
     </div>
-  );
+  )
 }

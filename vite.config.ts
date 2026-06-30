@@ -1,6 +1,6 @@
-import { defineConfig } from "vite";
-import solid from "vite-plugin-solid";
-import solidStyled from "vite-plugin-solid-styled";
+import { defineConfig } from "vite"
+import solid from "vite-plugin-solid"
+import solidStyled from "vite-plugin-solid-styled"
 
 export default defineConfig({
   plugins: [
@@ -8,8 +8,8 @@ export default defineConfig({
     solidStyled({
       filter: {
         include: "src/**/*.tsx",
-        exclude: "node_modules/**/*.{ts,js,tsx,jsx}"
-      }
-    })
-  ]
-});
+        exclude: "node_modules/**/*.{ts,js,tsx,jsx}",
+      },
+    }),
+  ],
+})

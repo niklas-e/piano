@@ -15,37 +15,37 @@ export const supportsHighlightApi =
   typeof CSS !== "undefined" &&
   "highlights" in CSS &&
   typeof Highlight === "function" &&
-  typeof Range === "function";
+  typeof Range === "function"
 
-const HIGHLIGHT_NAME = "search-match";
-const registry = new Map<symbol, Range[]>();
+const HIGHLIGHT_NAME = "search-match"
+const registry = new Map<symbol, Range[]>()
 
-let highlight: Highlight | undefined;
+let highlight: Highlight | undefined
 
 function rebuild(): void {
   if (!highlight) {
-    return;
+    return
   }
 
-  highlight.clear();
+  highlight.clear()
   for (const ranges of registry.values()) {
     for (const range of ranges) {
-      highlight.add(range);
+      highlight.add(range)
     }
   }
 }
 
 function ensureHighlight(): Highlight | undefined {
   if (!supportsHighlightApi) {
-    return undefined;
+    return undefined
   }
 
   if (!highlight) {
-    highlight = new Highlight();
-    CSS.highlights.set(HIGHLIGHT_NAME, highlight);
+    highlight = new Highlight()
+    CSS.highlights.set(HIGHLIGHT_NAME, highlight)
   }
 
-  return highlight;
+  return highlight
 }
 
 /**
@@ -54,25 +54,25 @@ function ensureHighlight(): Highlight | undefined {
  */
 export function setHighlightRanges(token: symbol, ranges: Range[]): void {
   if (!ensureHighlight()) {
-    return;
+    return
   }
 
   if (ranges.length === 0) {
-    registry.delete(token);
+    registry.delete(token)
   } else {
-    registry.set(token, ranges);
+    registry.set(token, ranges)
   }
 
-  rebuild();
+  rebuild()
 }
 
 /** Remove any ranges contributed by `token`. */
 export function clearHighlightRanges(token: symbol): void {
   if (!supportsHighlightApi) {
-    return;
+    return
   }
 
   if (registry.delete(token)) {
-    rebuild();
+    rebuild()
   }
 }

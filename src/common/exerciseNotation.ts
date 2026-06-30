@@ -1,5 +1,5 @@
-import { NOTE_NAMES, type NoteName } from "./exercises.ts";
-import { noteToAbc, type Clef, type Letter } from "./sightReading.ts";
+import { NOTE_NAMES, type NoteName } from "./exercises.ts"
+import { type Clef, type Letter, noteToAbc } from "./sightReading.ts"
 
 /**
  * Turns an ascending note sequence (a scale or arpeggio) into an abcjs tune,
@@ -12,16 +12,23 @@ import { noteToAbc, type Clef, type Letter } from "./sightReading.ts";
  * and `clef` follow the hand: right hand reads treble from C4, left reads bass
  * from C3, matching the keyboard range shown alongside.
  */
-export function sequenceToAbc(notes: readonly NoteName[], clef: Clef = "treble", baseOctave = 4): string {
-  let octave = baseOctave;
-  let prevPitchClass = -1;
+export function sequenceToAbc(
+  notes: readonly NoteName[],
+  clef: Clef = "treble",
+  baseOctave = 4,
+): string {
+  let octave = baseOctave
+  let prevPitchClass = -1
   const tokens = notes.map((name) => {
-    const pitchClass = NOTE_NAMES.indexOf(name);
-    if (prevPitchClass !== -1 && pitchClass <= prevPitchClass) octave += 1;
-    prevPitchClass = pitchClass;
-    return noteToAbc({ letter: name[0] as Letter, octave, accidental: name.length > 1 ? "sharp" : "natural" });
-  });
+    const pitchClass = NOTE_NAMES.indexOf(name)
+    if (prevPitchClass !== -1 && pitchClass <= prevPitchClass) octave += 1
+    prevPitchClass = pitchClass
+    return noteToAbc({
+      letter: name[0] as Letter,
+      octave,
+      accidental: name.length > 1 ? "sharp" : "natural",
+    })
+  })
   // L:1/4 keeps the noteheads compact; M:none drops the time signature.
-  return `X:1\nM:none\nL:1/4\nK:C clef=${clef}\n${tokens.join(" ")}\nw: ${notes.join(" ")}`;
+  return `X:1\nM:none\nL:1/4\nK:C clef=${clef}\n${tokens.join(" ")}\nw: ${notes.join(" ")}`
 }
-

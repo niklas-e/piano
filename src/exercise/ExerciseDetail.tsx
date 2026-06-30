@@ -1,14 +1,21 @@
-import { createEffect, createMemo, createSignal } from "solid-js";
-import { css } from "solid-styled";
-import { type Exercise, type Hand } from "../common/exercises";
-import { buildPianoKeyboard } from "../common/keyboard";
-import { derivePracticeRange, type PracticeRange } from "../common/practiceRange";
-import { readHandPreference, writeHandPreference, writeLastExerciseIdPreference } from "../common/preferences";
-import { ExerciseStaff } from "../common/ExerciseStaff";
-import { Keyboard } from "../common/Keyboard";
-import { KeyboardMinimap } from "../common/KeyboardMinimap";
-import { MetronomeControls } from "../common/Metronome";
-import { StepperButton } from "../common/StepperButton";
+import { createEffect, createMemo, createSignal } from "solid-js"
+import { css } from "solid-styled"
+import { ExerciseStaff } from "../common/ExerciseStaff"
+import type { Exercise, Hand } from "../common/exercises"
+import { Keyboard } from "../common/Keyboard"
+import { KeyboardMinimap } from "../common/KeyboardMinimap"
+import { buildPianoKeyboard } from "../common/keyboard"
+import { MetronomeControls } from "../common/Metronome"
+import {
+  derivePracticeRange,
+  type PracticeRange,
+} from "../common/practiceRange"
+import {
+  readHandPreference,
+  writeHandPreference,
+  writeLastExerciseIdPreference,
+} from "../common/preferences"
+import { StepperButton } from "../common/StepperButton"
 
 export function ExerciseDetail(props: { exercise: Exercise }) {
   css`
@@ -103,26 +110,31 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
       border-radius: 1rem;
       padding: 0.85rem;
     }
-  `;
+  `
 
-  const [hand, setHand] = createSignal<Hand>(readHandPreference());
-  const [range, setRange] = createSignal<PracticeRange>(1);
-  const keyboardKeys = buildPianoKeyboard();
-  const practice = createMemo(() => derivePracticeRange(props.exercise, hand(), range()));
+  const [hand, setHand] = createSignal<Hand>(readHandPreference())
+  const [range, setRange] = createSignal<PracticeRange>(1)
+  const keyboardKeys = buildPianoKeyboard()
+  const practice = createMemo(() =>
+    derivePracticeRange(props.exercise, hand(), range()),
+  )
 
   createEffect(() => {
-    writeLastExerciseIdPreference(props.exercise.id);
-  });
+    writeLastExerciseIdPreference(props.exercise.id)
+  })
 
   const updateHand = (value: string) => {
-    const nextHand = value === "left" ? "left" : "right";
-    setHand(nextHand);
-    writeHandPreference(nextHand);
-  };
+    const nextHand = value === "left" ? "left" : "right"
+    setHand(nextHand)
+    writeHandPreference(nextHand)
+  }
 
   const updateRange = (direction: -1 | 1) => {
-    setRange((currentRange) => Math.min(2, Math.max(1, currentRange + direction)) as PracticeRange);
-  };
+    setRange(
+      (currentRange) =>
+        Math.min(2, Math.max(1, currentRange + direction)) as PracticeRange,
+    )
+  }
 
   return (
     <section aria-labelledby="exercise-heading" class="stack">
@@ -159,14 +171,29 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
 
         <fieldset class="range-stepper">
           <div class="stepper-control">
-            <StepperButton ariaLabel="Decrease range" direction="decrement" onClick={() => updateRange(-1)} disabled={range() === 1} />
-            <span class="stepper-label" aria-live="polite">{practice().label}</span>
-            <StepperButton ariaLabel="Increase range" direction="increment" onClick={() => updateRange(1)} disabled={range() === 2} />
+            <StepperButton
+              ariaLabel="Decrease range"
+              direction="decrement"
+              onClick={() => updateRange(-1)}
+              disabled={range() === 1}
+            />
+            <span class="stepper-label" aria-live="polite">
+              {practice().label}
+            </span>
+            <StepperButton
+              ariaLabel="Increase range"
+              direction="increment"
+              onClick={() => updateRange(1)}
+              disabled={range() === 2}
+            />
           </div>
         </fieldset>
       </div>
 
-      <section class="practice-panel" aria-label={`${props.exercise.title} notes`}>
+      <section
+        class="practice-panel"
+        aria-label={`${props.exercise.title} notes`}
+      >
         <ExerciseStaff
           notes={practice().notes}
           clef={practice().clef}
@@ -185,5 +212,5 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
 
       <MetronomeControls variant="compact" />
     </section>
-  );
+  )
 }

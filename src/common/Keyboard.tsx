@@ -1,13 +1,13 @@
-import { For, Show, createEffect } from "solid-js";
-import { css } from "solid-styled";
-import { isHighlightedKey, whiteIndexForKey, type PianoKey } from "./keyboard";
-import type { Finger } from "./exercises";
+import { createEffect, For, Show } from "solid-js"
+import { css } from "solid-styled"
+import type { Finger } from "./exercises"
+import { isHighlightedKey, type PianoKey, whiteIndexForKey } from "./keyboard"
 
 export function Keyboard(props: {
-  keys: readonly PianoKey[];
-  keyIds: readonly string[];
-  fingering: readonly Finger[];
-  scrollKey?: string;
+  keys: readonly PianoKey[]
+  keyIds: readonly string[]
+  fingering: readonly Finger[]
+  scrollKey?: string
 }) {
   css`
     .keyboard-scroll {
@@ -96,52 +96,63 @@ export function Keyboard(props: {
         padding-inline: 0.85rem;
       }
     }
-  `;
+  `
 
-  let scrollContainer: HTMLDivElement | undefined;
-  let hasScrolled = false;
+  let scrollContainer: HTMLFieldSetElement | undefined
+  let hasScrolled = false
 
   createEffect(() => {
     // Re-run when exercise or hand changes (encoded in scrollKey),
     // intentionally NOT depending on keyIds so range changes do not re-scroll.
-    void props.scrollKey;
+    void props.scrollKey
 
     if (!scrollContainer) {
-      return;
+      return
     }
 
-    const target = scrollContainer.querySelector<HTMLElement>(".piano-key.is-highlighted");
+    const target = scrollContainer.querySelector<HTMLElement>(
+      ".piano-key.is-highlighted",
+    )
     if (!target) {
-      return;
+      return
     }
 
     target.scrollIntoView({
       inline: "start",
       block: "nearest",
-      behavior: hasScrolled ? "smooth" : "auto"
-    });
-    hasScrolled = true;
-  });
+      behavior: hasScrolled ? "smooth" : "auto",
+    })
+    hasScrolled = true
+  })
 
-  const whiteIndex = (keyIndex: number) => whiteIndexForKey(props.keys, keyIndex);
+  const whiteIndex = (keyIndex: number) =>
+    whiteIndexForKey(props.keys, keyIndex)
 
   return (
-    <div class="keyboard-scroll" role="group" aria-label="Practice keyboard" ref={scrollContainer}>
+    <fieldset
+      class="keyboard-scroll"
+      aria-label="Practice keyboard"
+      ref={scrollContainer}
+    >
       <div class="keyboard">
         <For each={props.keys}>
           {(key, index) => {
-            const highlighted = () => isHighlightedKey(key, props.keyIds);
+            const highlighted = () => isHighlightedKey(key, props.keyIds)
             const firstFingerForKey = () => {
-              const noteIndex = props.keyIds.indexOf(key.id);
-              return noteIndex >= 0 ? props.fingering[noteIndex] : undefined;
-            };
+              const noteIndex = props.keyIds.indexOf(key.id)
+              return noteIndex >= 0 ? props.fingering[noteIndex] : undefined
+            }
 
             return (
               <div
                 class={`piano-key ${key.type}${highlighted() ? " is-highlighted" : ""}`}
                 data-testid={`key-${key.id}`}
+                role="img"
                 aria-label={`${key.note}${key.octave}${highlighted() ? " highlighted" : ""}`}
-                style={{ "--key-index": String(index()), "--white-index": String(whiteIndex(index())) }}
+                style={{
+                  "--key-index": String(index()),
+                  "--white-index": String(whiteIndex(index())),
+                }}
               >
                 <Show when={key.type === "white"}>
                   <span class="key-label">{key.note}</span>
@@ -150,10 +161,10 @@ export function Keyboard(props: {
                   {(finger) => <strong>{finger()}</strong>}
                 </Show>
               </div>
-            );
+            )
           }}
         </For>
       </div>
-    </div>
-  );
+    </fieldset>
+  )
 }
