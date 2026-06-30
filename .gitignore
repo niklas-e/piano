@@ -2,6 +2,10 @@ node_modules/
 .pnpm-store/
 dist/
 .superpowers/
+.opencode/
+.agents/
+.claude/
+skills-lock.json
 tsconfig.tsbuildinfo
 .DS_Store
 *.local
