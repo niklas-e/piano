@@ -1,6 +1,13 @@
 # Piano Practice
 
-Lean SolidJS piano practice app for technical exercises and metronome work.
+> Early work in progress — many features are not built yet.
+
+A lean piano practice app: technical exercises and theory, nothing else.
+
+Most practice apps bury the practice under subscriptions, ads, and accounts —
+and you end up juggling several of them to cover the basics. This is the
+opposite: one place for exercises and theory, no fluff.
+
 
 ## Local Development
 
