@@ -4,6 +4,8 @@ export type Route =
   | { name: "exercise"; id: string }
   | { name: "metronome" }
   | { name: "sight-reading" }
+  | { name: "sheet-music" }
+  | { name: "sheet"; id: string }
   | { name: "notFound" }
 
 export type RouteHeader = {
@@ -37,6 +39,17 @@ export function parsePathname(pathname: string): Route {
     return { name: "sight-reading" }
   }
 
+  if (normalizedPathname === "/sheet-music") {
+    return { name: "sheet-music" }
+  }
+
+  if (normalizedPathname.startsWith("/sheet-music/")) {
+    const id = normalizedPathname.slice("/sheet-music/".length)
+    return id.length > 0 && !id.includes("/")
+      ? { name: "sheet", id }
+      : { name: "notFound" }
+  }
+
   return { name: "notFound" }
 }
 
@@ -49,6 +62,9 @@ export function getRouteHeader(route: Route): RouteHeader {
       return { href: "/metronome", title: "Metronome" }
     case "sight-reading":
       return { href: "/sight-reading", title: "Sight Reading" }
+    case "sheet-music":
+    case "sheet":
+      return { href: "/sheet-music", title: "Sheet Music" }
     case "home":
     case "notFound":
       return { href: "/", title: "Piano Practice" }
@@ -66,6 +82,10 @@ export function isPrimaryNavigationRoute(route: Route, href: string): boolean {
 
   if (href === "/sight-reading") {
     return route.name === "sight-reading"
+  }
+
+  if (href === "/sheet-music") {
+    return route.name === "sheet-music" || route.name === "sheet"
   }
 
   return false

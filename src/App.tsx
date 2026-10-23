@@ -8,6 +8,8 @@ import { ExercisePage } from "./exercise/ExercisePage"
 import { ExercisesPage } from "./exercises/ExercisesPage"
 import { HomePage } from "./home/HomePage"
 import { MetronomePage } from "./metronome/MetronomePage"
+import { SheetMusicPage } from "./sheetmusic/SheetMusicPage"
+import { SheetViewerPage } from "./sheetmusic/SheetViewerPage"
 import { SightReadingPage } from "./sightreading/SightReadingPage"
 
 export default function App() {
@@ -86,6 +88,16 @@ export default function App() {
           </Match>
           <Match when={route().name === "sight-reading"}>
             <SightReadingPage />
+          </Match>
+          <Match when={route().name === "sheet-music"}>
+            <SheetMusicPage />
+          </Match>
+          <Match when={route().name === "sheet" && route()} keyed>
+            {(currentRoute) =>
+              currentRoute.name === "sheet" ? (
+                <SheetViewerPage id={currentRoute.id} />
+              ) : null
+            }
           </Match>
           <Match when={route().name === "notFound"}>
             <NotFoundPage />

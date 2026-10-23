@@ -110,6 +110,25 @@ export function strokePath(points: readonly number[]): PathCommand[] {
   return commands
 }
 
+export function strokeSvgPath(points: readonly number[]): string {
+  return strokePath(points)
+    .map((command) => {
+      switch (command.type) {
+        case "move":
+          return `M${command.x} ${command.y}`
+        case "line":
+          return `L${command.x} ${command.y}`
+        case "quad":
+          return `Q${command.cx} ${command.cy} ${command.x} ${command.y}`
+        default: {
+          const exhaustive: never = command
+          throw new Error(`Unhandled path command: ${exhaustive}`)
+        }
+      }
+    })
+    .join("")
+}
+
 /**
  * Returns the strokes the eraser touches while moving from `from` to `to`.
  * The movement is sampled so that a quick swipe can't skip over a thin line.
@@ -173,6 +192,20 @@ function distanceToSegment(point: Point, start: Point, end: Point): number {
 
 function roundCoordinate(value: number): number {
   return Math.round(value * coordinatePrecision) / coordinatePrecision
+}
+
+/**
+ * Highlighter strokes are drawn beneath pen strokes, like ink written over a
+ * highlighted passage, wherever they were drawn in time.
+ */
+export function strokesByLayer(strokes: readonly Stroke[]): {
+  highlighter: Stroke[]
+  pen: Stroke[]
+} {
+  return {
+    highlighter: strokes.filter((stroke) => stroke.tool === "highlighter"),
+    pen: strokes.filter((stroke) => stroke.tool === "pen"),
+  }
 }
 
 export function addStroke(

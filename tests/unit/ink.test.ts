@@ -14,6 +14,8 @@ import {
   removeStrokes,
   type Stroke,
   strokePath,
+  strokeSvgPath,
+  strokesByLayer,
   strokesTouchedByEraser,
   undoInk,
 } from "../../src/common/ink.ts"
@@ -66,6 +68,11 @@ test("inner points become curve control points through the midpoints", () => {
   ])
 })
 
+test("strokes become SVG path data", () => {
+  assert.equal(strokeSvgPath([0, 0, 1, 0, 2, 1]), "M0 0Q1 0 1.5 0.5L2 1")
+  assert.equal(strokeSvgPath([0.5, 0.5]), "M0.5 0.5L0.5 0.5")
+})
+
 test("distance to a stroke is measured to its closest segment", () => {
   const line = stroke([0, 0, 1, 0])
 
@@ -101,6 +108,17 @@ test("a fast eraser swipe still catches lines it crossed between samples", () =>
     ),
     [vertical],
   )
+})
+
+test("highlighter strokes are layered beneath pen strokes in drawing order", () => {
+  const firstPen = stroke([0.1, 0.1])
+  const highlight: Stroke = { ...stroke([0.2, 0.2]), tool: "highlighter" }
+  const secondPen = stroke([0.3, 0.3])
+
+  assert.deepEqual(strokesByLayer([firstPen, highlight, secondPen]), {
+    highlighter: [highlight],
+    pen: [firstPen, secondPen],
+  })
 })
 
 test("adding and removing strokes leaves other pages untouched", () => {

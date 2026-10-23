@@ -7,6 +7,7 @@ const primaryNavigationItems = [
   { href: "/exercises", label: "Exercises" },
   { href: "/metronome", label: "Metronome" },
   { href: "/sight-reading", label: "Sight Reading" },
+  { href: "/sheet-music", label: "Sheet Music" },
 ] as const
 
 export function AppHeader(props: { route: Route }) {

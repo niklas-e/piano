@@ -20,6 +20,12 @@ const sections = [
     meta: "Note recognition",
     href: "/sight-reading",
   },
+  {
+    title: "Sheet Music",
+    description: "Keep your scores at hand and mark them up as you practice.",
+    meta: "PDFs and photos",
+    href: "/sheet-music",
+  },
 ] as const
 
 export function HomePage() {

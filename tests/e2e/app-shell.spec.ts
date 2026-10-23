@@ -5,10 +5,10 @@ test("root shows homepage launcher links", async ({ page }) => {
 
   const cards = page.locator('[aria-label="Practice tools"] > a[href]')
 
-  await expect(cards).toHaveCount(3)
-  await expect(cards.nth(0)).toHaveAttribute("href", /^\/.+/)
-  await expect(cards.nth(1)).toHaveAttribute("href", /^\/.+/)
-  await expect(cards.nth(2)).toHaveAttribute("href", /^\/.+/)
+  await expect(cards).toHaveCount(4)
+  for (const card of await cards.all()) {
+    await expect(card).toHaveAttribute("href", /^\/.+/)
+  }
 })
 
 test("exercise and metronome routes render their headings", async ({

@@ -10,6 +10,26 @@ export const iconModuleLoaders = {
   check: () => import("@phosphor-icons/webcomponents/PhCheck"),
   plus: () => import("@phosphor-icons/webcomponents/PhPlus"),
   minus: () => import("@phosphor-icons/webcomponents/PhMinus"),
+  hand: () => import("@phosphor-icons/webcomponents/PhHand"),
+  pen: () => import("@phosphor-icons/webcomponents/PhPen"),
+  highlighter: () => import("@phosphor-icons/webcomponents/PhHighlighter"),
+  eraser: () => import("@phosphor-icons/webcomponents/PhEraser"),
+  broom: () => import("@phosphor-icons/webcomponents/PhBroom"),
+  "arrow-counter-clockwise": () =>
+    import("@phosphor-icons/webcomponents/PhArrowCounterClockwise"),
+  "arrow-clockwise": () =>
+    import("@phosphor-icons/webcomponents/PhArrowClockwise"),
+  "magnifying-glass-plus": () =>
+    import("@phosphor-icons/webcomponents/PhMagnifyingGlassPlus"),
+  "magnifying-glass-minus": () =>
+    import("@phosphor-icons/webcomponents/PhMagnifyingGlassMinus"),
+  "download-simple": () =>
+    import("@phosphor-icons/webcomponents/PhDownloadSimple"),
+  "share-network": () => import("@phosphor-icons/webcomponents/PhShareNetwork"),
+  trash: () => import("@phosphor-icons/webcomponents/PhTrash"),
+  "upload-simple": () => import("@phosphor-icons/webcomponents/PhUploadSimple"),
+  "file-pdf": () => import("@phosphor-icons/webcomponents/PhFilePdf"),
+  image: () => import("@phosphor-icons/webcomponents/PhImage"),
 } satisfies Record<string, IconModuleLoader>
 
 export type IconName = keyof typeof iconModuleLoaders
