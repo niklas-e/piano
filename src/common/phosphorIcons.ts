@@ -32,6 +32,7 @@ export const iconModuleLoaders = {
   "caret-left": () => import("@phosphor-icons/webcomponents/PhCaretLeft"),
   "caret-down": () => import("@phosphor-icons/webcomponents/PhCaretDown"),
   "caret-right": () => import("@phosphor-icons/webcomponents/PhCaretRight"),
+  rows: () => import("@phosphor-icons/webcomponents/PhRows"),
   trash: () => import("@phosphor-icons/webcomponents/PhTrash"),
   "upload-simple": () => import("@phosphor-icons/webcomponents/PhUploadSimple"),
   "file-pdf": () => import("@phosphor-icons/webcomponents/PhFilePdf"),

@@ -15,14 +15,21 @@ import { PhIcon } from "../common/PhIcon"
 import {
   chooseLayout,
   fitPageWidth,
+  type Place,
   pageBox,
   pageViews,
+  placeOfView,
   type Size,
   SPREAD_GAP_PX,
   stageAction,
-  viewIndexForPage,
+  viewIndexForPlace,
   viewLabel,
+  viewPages,
 } from "../common/pageTurns"
+import {
+  readHalfPageTurnsPreference,
+  writeHalfPageTurnsPreference,
+} from "../common/preferences"
 import { exitFullscreen, keepScreenOn } from "../common/screen"
 import { type PageSource, SheetPage } from "./SheetPage"
 
@@ -131,8 +138,33 @@ export function FullScreenView(props: {
       padding: 0.5rem;
     }
 
-    .control:hover:not(:disabled) {
+    .control:hover:not(:disabled, [aria-pressed="true"]) {
       background: rgba(255, 250, 242, 0.12);
+    }
+
+    .control[aria-pressed="true"] {
+      background: #fffaf2;
+      color: #1d1712;
+    }
+
+    /* The top half of the next page, over the end of the one being read. */
+    .upcoming {
+      align-items: center;
+      clip-path: inset(0 0 50% 0);
+      display: flex;
+      inset: 0;
+      justify-content: center;
+      position: absolute;
+      z-index: 1;
+    }
+
+    .half-divider {
+      border-top: 2px solid rgba(29, 23, 18, 0.55);
+      box-shadow: 0 0 10px 2px rgba(29, 23, 18, 0.3);
+      inset: 50% 0 auto;
+      pointer-events: none;
+      position: absolute;
+      z-index: 2;
     }
 
     .control:disabled {
@@ -141,36 +173,58 @@ export function FullScreenView(props: {
     }
   `
 
-  // The page being read is kept rather than the view, so turning the screen
-  // between one and two pages at a time stays on it.
-  const [page, setPage] = createSignal(props.startPage)
+  // The place being read is kept rather than the view, so turning the
+  // screen between one and two pages at a time stays on the same page.
+  const [place, setPlace] = createSignal<Place>({
+    page: props.startPage,
+    halfway: false,
+  })
   const [stage, setStage] = createSignal<Size>({ width: 0, height: 0 })
   const [controlsShown, setControlsShown] = createSignal(true)
+  const [halfPageTurns, setHalfPageTurns] = createSignal(
+    readHalfPageTurnsPreference(),
+  )
 
   // Scores rarely mix page sizes, so the first page decides for all.
   const layout = createMemo(() =>
     chooseLayout(stage(), props.pages[0].aspectRatio, props.pages.length),
   )
-  const views = createMemo(() => pageViews(props.pages.length, layout()))
-  const viewIndex = createMemo(() => viewIndexForPage(views(), page()))
+  const views = createMemo(() =>
+    pageViews(props.pages.length, layout(), halfPageTurns()),
+  )
+  const viewIndex = createMemo(() => viewIndexForPlace(views(), place()))
   const view = () => views()[viewIndex()]
-  const isVisible = (page: number) => view().pages.includes(page)
+  const page = () => place().page
+  const isVisible = (page: number) => viewPages(view()).includes(page)
+  /** The next page, while its top half shows over the end of this one. */
+  const upcomingPage = () => {
+    const current = view()
+    return current.kind === "half" ? current.next : undefined
+  }
   // The views either side are rendered too, so turning to them is instant.
   const isActive = (page: number) =>
     views()
       .slice(Math.max(0, viewIndex() - 1), viewIndex() + 2)
-      .some((nearby) => nearby.pages.includes(page))
+      .some((nearby) => viewPages(nearby).includes(page))
 
   let dialog: HTMLDialogElement | undefined
   let stageElement: HTMLDivElement | undefined
 
   const showView = (index: number) => {
     const all = views()
-    setPage(all[Math.min(all.length - 1, Math.max(0, index))].pages[0])
+    setPlace(placeOfView(all[Math.min(all.length - 1, Math.max(0, index))]))
+  }
+  const toggleHalfPageTurns = () => {
+    const enabled = !halfPageTurns()
+    setHalfPageTurns(enabled)
+    writeHalfPageTurnsPreference(enabled)
   }
   const turn = (step: 1 | -1) => showView(viewIndex() + step)
   const turnFromMusic = (step: 1 | -1) => {
     setControlsShown(false)
+    // A control focused earlier would otherwise keep the controls in sight,
+    // and take the next press of Space.
+    stageElement?.focus()
     turn(step)
   }
   const close = () => dialog?.close()
@@ -336,7 +390,10 @@ export function FullScreenView(props: {
         <Show when={stage().width > 0}>
           <Index each={props.pages}>
             {(source, index) => (
-              <div hidden={!isVisible(index)}>
+              <div
+                class={upcomingPage() === index ? "upcoming" : undefined}
+                hidden={!isVisible(index)}
+              >
                 <SheetPage
                   index={index}
                   pageCount={props.pages.length}
@@ -353,6 +410,9 @@ export function FullScreenView(props: {
               </div>
             )}
           </Index>
+          <Show when={upcomingPage() !== undefined}>
+            <div class="half-divider" />
+          </Show>
         </Show>
       </div>
 
@@ -367,6 +427,16 @@ export function FullScreenView(props: {
           <PhIcon name="corners-in" aria-hidden="true" size={22} />
         </button>
         <p class="title">{props.name}</p>
+        <button
+          type="button"
+          class="control"
+          aria-label="Half-page turns"
+          title="Half-page turns: show the top of the next page while finishing this one"
+          aria-pressed={halfPageTurns()}
+          onClick={toggleHalfPageTurns}
+        >
+          <PhIcon name="rows" aria-hidden="true" size={22} />
+        </button>
         <div class="paging">
           <button
             type="button"

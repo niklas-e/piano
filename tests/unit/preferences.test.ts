@@ -5,6 +5,7 @@ import {
   MIN_BPM,
   readBpmPreference,
   readExerciseTypeFilterPreference,
+  readHalfPageTurnsPreference,
   readHandPreference,
   readInkColorPreference,
   readLastExerciseIdPreference,
@@ -12,6 +13,7 @@ import {
   type StorageLike,
   writeBpmPreference,
   writeExerciseTypeFilterPreference,
+  writeHalfPageTurnsPreference,
   writeHandPreference,
   writeInkColorPreference,
   writeLastExerciseIdPreference,
@@ -59,6 +61,16 @@ test("line widths are remembered per tool", () => {
 
   storage.setItem("piano:line-width:pen", "huge")
   assert.equal(readLineWidthPreference("pen", storage), "medium")
+})
+
+test("half-page turns are off until turned on", () => {
+  const storage = memoryStorage()
+
+  assert.equal(readHalfPageTurnsPreference(storage), false)
+  writeHalfPageTurnsPreference(true, storage)
+  assert.equal(readHalfPageTurnsPreference(storage), true)
+  writeHalfPageTurnsPreference(false, storage)
+  assert.equal(readHalfPageTurnsPreference(storage), false)
 })
 
 test("exercise filter and hand preferences reject invalid stored values", () => {

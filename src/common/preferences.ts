@@ -26,6 +26,7 @@ export type StorageLike = {
 const keys = {
   bpm: "piano:bpm",
   exerciseTypeFilter: "piano:exercise-type-filter",
+  halfPageTurns: "piano:half-page-turns",
   hand: "piano:hand",
   inkColor: {
     pen: "piano:ink-color:pen",
@@ -167,6 +168,19 @@ export function writeSightReadingDurationPreference(
     keys.sightReadingDuration,
     String(durations.has(seconds) ? seconds : DEFAULT_SIGHT_READING_DURATION),
   )
+}
+
+export function readHalfPageTurnsPreference(
+  storage = getBrowserStorage(),
+): boolean {
+  return readStorageItem(storage, keys.halfPageTurns) === "true"
+}
+
+export function writeHalfPageTurnsPreference(
+  value: boolean,
+  storage = getBrowserStorage(),
+): void {
+  writeStorageItem(storage, keys.halfPageTurns, String(value))
 }
 
 export function readInkColorPreference(

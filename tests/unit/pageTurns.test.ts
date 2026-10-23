@@ -3,10 +3,12 @@ import test from "node:test"
 import {
   chooseLayout,
   fitPageWidth,
+  type PageView,
   pageBox,
   pageViews,
+  placeOfView,
   stageAction,
-  viewIndexForPage,
+  viewIndexForPlace,
   viewLabel,
 } from "../../src/common/pageTurns.ts"
 
@@ -44,31 +46,78 @@ test("pages in a spread share the width, with a gap between them", () => {
   })
 })
 
+const pages = (...list: number[]): PageView => ({ kind: "pages", pages: list })
+const half = (page: number): PageView => ({
+  kind: "half",
+  page,
+  next: page + 1,
+})
+const at = (page: number, halfway = false) => ({ page, halfway })
+
 test("every page gets a view of its own, or shares one in pairs", () => {
-  assert.deepEqual(pageViews(3, "single"), [
-    { pages: [0] },
-    { pages: [1] },
-    { pages: [2] },
+  assert.deepEqual(pageViews(3, "single", false), [
+    pages(0),
+    pages(1),
+    pages(2),
   ])
-  assert.deepEqual(pageViews(5, "spread"), [
-    { pages: [0, 1] },
-    { pages: [2, 3] },
-    { pages: [4] },
+  assert.deepEqual(pageViews(5, "spread", false), [
+    pages(0, 1),
+    pages(2, 3),
+    pages(4),
   ])
 })
 
-test("a page opens the view that shows it", () => {
-  const spreads = pageViews(5, "spread")
+test("half-page turns stop halfway between pages, or move pairs by one", () => {
+  assert.deepEqual(pageViews(3, "single", true), [
+    pages(0),
+    half(0),
+    pages(1),
+    half(1),
+    pages(2),
+  ])
+  assert.deepEqual(pageViews(4, "spread", true), [
+    pages(0, 1),
+    pages(1, 2),
+    pages(2, 3),
+  ])
+})
 
-  assert.equal(viewIndexForPage(spreads, 3), 1)
-  assert.equal(viewIndexForPage(spreads, 4), 2)
+test("a place opens the view that starts with its page", () => {
+  const spreads = pageViews(5, "spread", false)
+  assert.equal(viewIndexForPlace(spreads, at(3)), 1)
+  assert.equal(viewIndexForPlace(spreads, at(4)), 2)
+
+  const sliding = pageViews(4, "spread", true)
+  assert.equal(viewIndexForPlace(sliding, at(2)), 2)
+  assert.equal(viewIndexForPlace(sliding, at(3)), 2)
+
+  const halves = pageViews(3, "single", true)
+  assert.equal(viewIndexForPlace(halves, at(1)), 2)
+  assert.equal(viewIndexForPlace(halves, at(1, true)), 3)
+  // The last page has no next one to be halfway to.
+  assert.equal(viewIndexForPlace(halves, at(2, true)), 4)
+  // Without half-page turns, halfway rounds back to the page.
+  assert.equal(viewIndexForPlace(pageViews(3, "single", false), at(1, true)), 1)
   // A remembered page past the end opens the last view.
-  assert.equal(viewIndexForPage(pageViews(3, "single"), 7), 2)
+  assert.equal(viewIndexForPlace(halves, at(7)), 4)
+})
+
+test("turning to a view and back finds the same view", () => {
+  for (const views of [
+    pageViews(5, "single", true),
+    pageViews(5, "spread", true),
+    pageViews(5, "spread", false),
+  ]) {
+    views.forEach((view, index) => {
+      assert.equal(viewIndexForPlace(views, placeOfView(view)), index)
+    })
+  }
 })
 
 test("view labels count pages from one", () => {
-  assert.equal(viewLabel({ pages: [2] }, 8), "3 / 8")
-  assert.equal(viewLabel({ pages: [2, 3] }, 8), "3–4 / 8")
+  assert.equal(viewLabel(pages(2), 8), "3 / 8")
+  assert.equal(viewLabel(pages(2, 3), 8), "3–4 / 8")
+  assert.equal(viewLabel(half(2), 8), "3–4 / 8")
 })
 
 test("taps go back on the left, forward on the right, and show controls in between", () => {

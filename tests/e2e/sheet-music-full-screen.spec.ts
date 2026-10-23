@@ -138,6 +138,48 @@ test("pages turned in full screen are where the sheet reopens", async ({
   ).toBeInViewport()
 })
 
+test("half-page turns show the top of the next page first", async ({
+  page,
+}) => {
+  await openSheet(page)
+  await page.getByRole("button", { name: "Full screen" }).click()
+  const dialog = fullScreen(page)
+  const halfPageTurns = dialog.getByRole("button", { name: "Half-page turns" })
+  await expect(halfPageTurns).toHaveAttribute("aria-pressed", "false")
+  await halfPageTurns.click()
+  await expect(halfPageTurns).toHaveAttribute("aria-pressed", "true")
+
+  /** The page seen at a height, as a fraction of the screen. */
+  const pageAt = (y: number) =>
+    page.evaluate(
+      (fraction) =>
+        document
+          .elementFromPoint(
+            window.innerWidth / 2,
+            window.innerHeight * fraction,
+          )
+          ?.closest("[aria-label^='Page']")
+          ?.getAttribute("aria-label"),
+      y,
+    )
+
+  await page.keyboard.press("ArrowRight")
+  await expect(dialog.getByText("1–2 / 3")).toBeAttached()
+  await expect.poll(() => pageAt(0.25)).toBe("Page 2 of 3")
+  await expect.poll(() => pageAt(0.75)).toBe("Page 1 of 3")
+
+  await page.keyboard.press("ArrowRight")
+  await expectWholePage(page, "Page 2 of 3")
+  await page.keyboard.press("ArrowLeft")
+  await expect.poll(() => pageAt(0.25)).toBe("Page 2 of 3")
+  await expect.poll(() => pageAt(0.75)).toBe("Page 1 of 3")
+
+  // The setting is remembered.
+  await page.keyboard.press("Escape")
+  await page.getByRole("button", { name: "Full screen" }).click()
+  await expect(halfPageTurns).toHaveAttribute("aria-pressed", "true")
+})
+
 test("full screen keeps the screen awake until it closes", async ({ page }) => {
   await page.addInitScript(() => {
     const log: string[] = []

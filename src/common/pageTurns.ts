@@ -2,8 +2,17 @@ import type { Point } from "./ink.ts"
 
 export type Size = { width: number; height: number }
 
-/** Pages that fill the screen together in full screen, left to right. */
-export type PageView = { pages: readonly number[] }
+/**
+ * What fills the screen in full screen: whole pages, left to right, or the
+ * top half of the next page over the bottom half of this one, so the next
+ * page can be read before this one is finished.
+ */
+export type PageView =
+  | { kind: "pages"; pages: readonly number[] }
+  | { kind: "half"; page: number; next: number }
+
+/** Where the reader is: on a page, or halfway from it to the next. */
+export type Place = { page: number; halfway: boolean }
 
 /** One page at a time, or two side by side like an open book. */
 export type PageLayout = "single" | "spread"
@@ -47,29 +56,87 @@ export function pageBox(box: Size, layout: PageLayout): Size {
     : box
 }
 
-export function pageViews(pageCount: number, layout: PageLayout): PageView[] {
-  const step = layout === "spread" ? 2 : 1
-  return Array.from({ length: Math.ceil(pageCount / step) }, (_, index) => ({
+/**
+ * The views to turn through. With half-page turns, single pages turn half a
+ * page at a time, and pairs one page at a time, so the page being finished
+ * stays in sight either way.
+ */
+export function pageViews(
+  pageCount: number,
+  layout: PageLayout,
+  halfPageTurns: boolean,
+): PageView[] {
+  const pages = (first: number, count: number): PageView => ({
+    kind: "pages",
     pages: Array.from(
-      { length: Math.min(step, pageCount - index * step) },
-      (_, offset) => index * step + offset,
+      { length: Math.min(count, pageCount - first) },
+      (_, offset) => first + offset,
     ),
-  }))
+  })
+
+  if (layout === "spread") {
+    const step = halfPageTurns ? 1 : 2
+    const count = halfPageTurns
+      ? Math.max(1, pageCount - 1)
+      : Math.ceil(pageCount / 2)
+    return Array.from({ length: count }, (_, index) => pages(index * step, 2))
+  }
+
+  return Array.from({ length: pageCount }, (_, page): PageView[] =>
+    halfPageTurns && page + 1 < pageCount
+      ? [pages(page, 1), { kind: "half", page, next: page + 1 }]
+      : [pages(page, 1)],
+  ).flat()
 }
 
-/** The view that shows `page`, or the nearest one if the page is gone. */
-export function viewIndexForPage(
+export function viewPages(view: PageView): readonly number[] {
+  switch (view.kind) {
+    case "pages":
+      return view.pages
+    case "half":
+      return [view.page, view.next]
+    default: {
+      const exhaustive: never = view
+      throw new Error(`Unhandled page view: ${exhaustive}`)
+    }
+  }
+}
+
+export function placeOfView(view: PageView): Place {
+  return view.kind === "half"
+    ? { page: view.page, halfway: true }
+    : { page: view.pages[0], halfway: false }
+}
+
+/**
+ * The view for a place, preferring one that starts with its page. Places
+ * from another layout land on the nearest view, and pages past the end on
+ * the last one.
+ */
+export function viewIndexForPlace(
   views: readonly PageView[],
-  page: number,
+  place: Place,
 ): number {
-  const index = views.findIndex((view) => view.pages.includes(page))
-  return index === -1 ? Math.max(0, views.length - 1) : index
+  const starting = views.findIndex(
+    (view) => view.kind === "pages" && view.pages[0] === place.page,
+  )
+  if (starting !== -1) {
+    return place.halfway && views[starting + 1]?.kind === "half"
+      ? starting + 1
+      : starting
+  }
+
+  const showing = views.findIndex((view) =>
+    viewPages(view).includes(place.page),
+  )
+  return showing === -1 ? Math.max(0, views.length - 1) : showing
 }
 
 /** Like "3 / 8", or "3–4 / 8" when a view shows more than one page. */
 export function viewLabel(view: PageView, pageCount: number): string {
-  const first = view.pages[0] + 1
-  const last = view.pages[view.pages.length - 1] + 1
+  const pages = viewPages(view)
+  const first = pages[0] + 1
+  const last = pages[pages.length - 1] + 1
   return `${first === last ? first : `${first}–${last}`} / ${pageCount}`
 }
 
