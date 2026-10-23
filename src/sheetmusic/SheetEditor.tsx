@@ -173,6 +173,35 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
       min-width: 4rem;
     }
 
+    .page-picker {
+      align-items: center;
+      border-radius: 0.75rem;
+      display: inline-flex;
+      min-height: 2.75rem;
+      position: relative;
+    }
+
+    .page-picker:hover {
+      background: #efe3d2;
+    }
+
+    .page-select {
+      appearance: none;
+      background: none;
+      cursor: pointer;
+      font-feature-settings: "tnum" 1;
+      font-size: 0.9rem;
+      font-weight: 800;
+      min-height: 2.75rem;
+      padding: 0.5rem 1.6rem 0.5rem 0.6rem;
+    }
+
+    .page-picker :global(.ph-icon) {
+      pointer-events: none;
+      position: absolute;
+      right: 0.4rem;
+    }
+
     .swatch {
       background: var(--swatch);
       border: 2px solid #fffaf2;
@@ -286,6 +315,7 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   const [exportState, setExportState] = createSignal<ExportState>("idle")
   const [name, setName] = createSignal(sheet.record.name)
   const [renameFailed, setRenameFailed] = createSignal(false)
+  const [currentPage, setCurrentPage] = createSignal(sheet.record.lastPage)
   const [fullScreen, setFullScreen] = createSignal<{
     startPage: number
     scroll: Point
@@ -338,10 +368,36 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
     ),
   )
 
+  // Reopening the sheet later continues from the same page.
+  let lastPageTimer: number | undefined
+  const saveLastPage = () => {
+    window.clearTimeout(lastPageTimer)
+    lastPageTimer = undefined
+    sheetMusicLibrary.saveLastPage(sheet.record.id, currentPage()).catch(() => {
+      // Only a convenience. The sheet opens on the first page instead.
+    })
+  }
+  const flushLastPage = () => {
+    if (lastPageTimer !== undefined) {
+      saveLastPage()
+    }
+  }
+  createEffect(
+    on(
+      currentPage,
+      () => {
+        window.clearTimeout(lastPageTimer)
+        lastPageTimer = window.setTimeout(saveLastPage, saveDelayMs)
+      },
+      { defer: true },
+    ),
+  )
+
   onMount(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         void flushSave()
+        flushLastPage()
       }
     }
     document.addEventListener("visibilitychange", handleVisibilityChange)
@@ -350,6 +406,7 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
       document.removeEventListener("visibilitychange", handleVisibilityChange)
       window.removeEventListener("pagehide", handleVisibilityChange)
       void flushSave()
+      flushLastPage()
     })
   })
 
@@ -442,8 +499,43 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
     const index = pages.findIndex(
       (page) => page.getBoundingClientRect().bottom > readingLine,
     )
-    return index === -1 ? pages.length - 1 : index
+    return index === -1 ? Math.max(0, pages.length - 1) : index
   }
+
+  const goToPage = (page: number) => {
+    pageElements()[page]?.scrollIntoView({ block: "start" })
+    setCurrentPage(page)
+  }
+
+  onMount(() => {
+    // Open on the page that was read last, once the pages exist after the
+    // first layout.
+    queueMicrotask(() => {
+      if (currentPage() > 0) {
+        goToPage(currentPage())
+      }
+    })
+
+    let frame: number | undefined
+    const updateCurrentPage = () => {
+      frame = undefined
+      // Full screen keeps track of its own page while the pages here are
+      // hidden.
+      if (fullScreen() === undefined) {
+        setCurrentPage(pageInView())
+      }
+    }
+    const scheduleUpdate = () => {
+      frame ??= window.requestAnimationFrame(updateCurrentPage)
+    }
+    window.addEventListener("scroll", scheduleUpdate, { passive: true })
+    window.addEventListener("resize", scheduleUpdate)
+    onCleanup(() => {
+      window.cancelAnimationFrame(frame ?? 0)
+      window.removeEventListener("scroll", scheduleUpdate)
+      window.removeEventListener("resize", scheduleUpdate)
+    })
+  })
 
   const enterFullScreen = () => {
     // Asked for straight away, while the tap still allows it.
@@ -1025,7 +1117,27 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
             </button>
           </fieldset>
 
-          <fieldset class="tool-group" aria-label="View">
+          <fieldset class="tool-group" aria-label="Pages">
+            <Show when={sheet.pages.length > 1}>
+              <label class="page-picker" title="Go to page">
+                <select
+                  class="page-select"
+                  aria-label="Page"
+                  onChange={(event) =>
+                    goToPage(Number(event.currentTarget.value))
+                  }
+                >
+                  <Index each={sheet.pages}>
+                    {(_, index) => (
+                      <option value={index} selected={index === currentPage()}>
+                        {index + 1} / {sheet.pages.length}
+                      </option>
+                    )}
+                  </Index>
+                </select>
+                <PhIcon name="caret-down" aria-hidden="true" size={14} />
+              </label>
+            </Show>
             <button
               type="button"
               class="tool-button"
@@ -1108,6 +1220,7 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
             name={name()}
             ink={ink().present}
             startPage={entered().startPage}
+            onPageChange={setCurrentPage}
             onExit={exitFullScreen}
           />
         )}

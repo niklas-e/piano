@@ -251,6 +251,56 @@ test("Ctrl + wheel zooms and the scroll tool drags the page", async ({
   await expect(inkPaths(page, 0, "pen")).toHaveCount(0)
 })
 
+test("the page in view is shown and other pages can be picked", async ({
+  page,
+}) => {
+  await page.goto("/sheet-music")
+  await addSheets(page, [await pdfFile()])
+  await page.getByRole("link", { name: "Etude in C" }).click()
+
+  const picker = page.getByRole("combobox", { name: "Page" })
+  await expect(picker.locator("option:checked")).toHaveText("1 / 3")
+
+  await picker.selectOption("3 / 3")
+  await expect(
+    page.getByRole("figure", { name: "Page 3 of 3" }),
+  ).toBeInViewport()
+
+  await page
+    .getByRole("figure", { name: "Page 2 of 3" })
+    .scrollIntoViewIfNeeded()
+  await page.evaluate(() => window.scrollBy(0, 200))
+  await expect(picker.locator("option:checked")).toHaveText("2 / 3")
+})
+
+test("sheets open on the page that was read last", async ({ page }) => {
+  await page.goto("/sheet-music")
+  await addSheets(page, [await pdfFile()])
+  await page.getByRole("link", { name: "Etude in C" }).click()
+  await page.getByRole("combobox", { name: "Page" }).selectOption("3 / 3")
+
+  await page.goBack()
+  await page.getByRole("link", { name: "Etude in C" }).click()
+  await expect(
+    page.getByRole("figure", { name: "Page 3 of 3" }),
+  ).toBeInViewport()
+
+  // Pages turned in full screen count too.
+  await page.getByRole("button", { name: "Full screen" }).click()
+  await page.keyboard.press("ArrowLeft")
+  await expect(
+    page.getByRole("dialog").getByRole("figure", { name: "Page 2 of 3" }),
+  ).toBeVisible()
+  await page.goBack()
+  await page.getByRole("link", { name: "Etude in C" }).click()
+  await expect(
+    page.getByRole("combobox", { name: "Page" }).locator("option:checked"),
+  ).toHaveText("2 / 3")
+  await expect(
+    page.getByRole("figure", { name: "Page 2 of 3" }),
+  ).toBeInViewport()
+})
+
 test("the title can be renamed in place", async ({ page }) => {
   await page.goto("/sheet-music")
   await addSheets(page, [await pdfFile()])

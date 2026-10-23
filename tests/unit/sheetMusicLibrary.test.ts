@@ -116,6 +116,50 @@ test("renaming a deleted sheet does not bring it back", async () => {
   assert.deepEqual(await library.list(), [])
 })
 
+test("the last page read is remembered without reordering the library", async () => {
+  const { library, reopen, advanceTime } = createLibrary()
+  const first = await library.add(sheet("Etude.pdf", 3))
+  advanceTime()
+  await library.add(sheet("Nocturne.pdf"))
+  advanceTime()
+
+  assert.equal(first.lastPage, 0)
+  await library.saveLastPage(first.id, 2)
+
+  assert.equal((await reopen().get(first.id))?.lastPage, 2)
+  assert.deepEqual(
+    (await library.list()).map((record) => record.name),
+    ["Nocturne.pdf", "Etude.pdf"],
+  )
+})
+
+test("sheets saved before pages were remembered open on the first page", async () => {
+  const factory = new IDBFactory()
+  const library = openSheetMusicLibrary(factory)
+  const { id, lastPage: _, ...older } = await library.add(sheet("Etude.pdf"))
+  await new Promise<void>((resolve, reject) => {
+    const request = factory.open("piano-sheet-music")
+    request.onerror = () => reject(request.error)
+    request.onsuccess = () => {
+      const transaction = request.result.transaction("sheets", "readwrite")
+      transaction.objectStore("sheets").put({ id, ...older })
+      transaction.oncomplete = () => resolve()
+    }
+  })
+
+  assert.equal((await openSheetMusicLibrary(factory).get(id))?.lastPage, 0)
+})
+
+test("remembering the page of a deleted sheet does not bring it back", async () => {
+  const { library } = createLibrary()
+  const record = await library.add(sheet("Etude.pdf"))
+  await library.remove(record.id)
+
+  await library.saveLastPage(record.id, 1)
+
+  assert.deepEqual(await library.list(), [])
+})
+
 test("removing a sheet deletes its file and ink", async () => {
   const { library } = createLibrary()
   const record = await library.add(sheet("Etude.pdf"))

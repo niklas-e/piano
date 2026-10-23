@@ -1,7 +1,9 @@
 import {
+  createEffect,
   createSignal,
   Index,
   type JSX,
+  on,
   onCleanup,
   onMount,
   Show,
@@ -37,6 +39,7 @@ export function FullScreenView(props: {
   name: string
   ink: InkPages
   startPage: number
+  onPageChange: (page: number) => void
   onExit: (page: number) => void
 }) {
   css`
@@ -140,6 +143,7 @@ export function FullScreenView(props: {
   const [controlsShown, setControlsShown] = createSignal(true)
 
   const view = () => views[viewIndex()]
+  const page = () => view().pages[0]
   const isVisible = (page: number) => view().pages.includes(page)
   // The views either side are rendered too, so turning to them is instant.
   const isActive = (page: number) =>
@@ -159,6 +163,10 @@ export function FullScreenView(props: {
     turn(step)
   }
   const close = () => dialog?.close()
+
+  createEffect(
+    on(page, (current) => props.onPageChange(current), { defer: true }),
+  )
 
   onMount(() => {
     if (!dialog || !stageElement) {
@@ -296,7 +304,7 @@ export function FullScreenView(props: {
       aria-label={`${props.name}, full screen`}
       data-controls={controlsShown() ? "shown" : "hidden"}
       onKeyDown={handleKeyDown}
-      onClose={() => props.onExit(view().pages[0])}
+      onClose={() => props.onExit(page())}
     >
       {/* biome-ignore lint/a11y/noStaticElementInteractions: Taps and swipes are shortcuts; the controls and keyboard turn pages too. */}
       <div

@@ -30,6 +30,7 @@ export const iconModuleLoaders = {
   "corners-out": () => import("@phosphor-icons/webcomponents/PhCornersOut"),
   "corners-in": () => import("@phosphor-icons/webcomponents/PhCornersIn"),
   "caret-left": () => import("@phosphor-icons/webcomponents/PhCaretLeft"),
+  "caret-down": () => import("@phosphor-icons/webcomponents/PhCaretDown"),
   "caret-right": () => import("@phosphor-icons/webcomponents/PhCaretRight"),
   trash: () => import("@phosphor-icons/webcomponents/PhTrash"),
   "upload-simple": () => import("@phosphor-icons/webcomponents/PhUploadSimple"),

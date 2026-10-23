@@ -13,9 +13,14 @@ export type SheetRecord = {
   createdAt: number
   updatedAt: number
   thumbnail: Blob | undefined
+  /** The page, from 0, that was being read when the sheet was last open. */
+  lastPage: number
 }
 
-export type NewSheet = Omit<SheetRecord, "id" | "createdAt" | "updatedAt"> & {
+export type NewSheet = Omit<
+  SheetRecord,
+  "id" | "createdAt" | "updatedAt" | "lastPage"
+> & {
   file: Blob
 }
 
@@ -28,6 +33,8 @@ export type SheetMusicLibrary = {
   add(sheet: NewSheet): Promise<SheetRecord>
   saveInk(id: string, pages: InkPages): Promise<void>
   rename(id: string, name: string): Promise<void>
+  /** Remembers where the sheet is being read, without counting as a change. */
+  saveLastPage(id: string, page: number): Promise<void>
   remove(id: string): Promise<void>
 }
 
@@ -86,7 +93,7 @@ export function openSheetMusicLibrary(
       (transaction) => transaction.objectStore(stores.sheets).get(id),
     )
 
-    return isSheetRecord(record) ? record : undefined
+    return parseSheetRecord(record)
   }
 
   return {
@@ -100,7 +107,7 @@ export function openSheetMusicLibrary(
       )
 
       return (records ?? [])
-        .filter(isSheetRecord)
+        .flatMap((record) => parseSheetRecord(record) ?? [])
         .sort((a, b) => b.updatedAt - a.updatedAt)
     },
 
@@ -132,6 +139,7 @@ export function openSheetMusicLibrary(
         id: createId(),
         createdAt: timestamp,
         updatedAt: timestamp,
+        lastPage: 0,
       }
 
       await transact(
@@ -155,10 +163,10 @@ export function openSheetMusicLibrary(
           const sheets = transaction.objectStore(stores.sheets)
           const request = sheets.get(id)
           request.onsuccess = () => {
-            const record: unknown = request.result
+            const record = parseSheetRecord(request.result)
             // The sheet may have been deleted in another tab. Don't resurrect
             // its ink.
-            if (isSheetRecord(record)) {
+            if (record) {
               sheets.put({ ...record, updatedAt: now() })
               transaction.objectStore(stores.ink).put(pages, id)
             }
@@ -173,9 +181,23 @@ export function openSheetMusicLibrary(
         const sheets = transaction.objectStore(stores.sheets)
         const request = sheets.get(id)
         request.onsuccess = () => {
-          const record: unknown = request.result
-          if (isSheetRecord(record)) {
+          const record = parseSheetRecord(request.result)
+          if (record) {
             sheets.put({ ...record, name, updatedAt: now() })
+          }
+        }
+        return undefined
+      })
+    },
+
+    async saveLastPage(id, page) {
+      await transact([stores.sheets], "readwrite", (transaction) => {
+        const sheets = transaction.objectStore(stores.sheets)
+        const request = sheets.get(id)
+        request.onsuccess = () => {
+          const record = parseSheetRecord(request.result)
+          if (record) {
+            sheets.put({ ...record, lastPage: page })
           }
         }
         return undefined
@@ -214,7 +236,31 @@ function openDatabase(factory: IDBFactory): Promise<IDBDatabase> {
   })
 }
 
-function isSheetRecord(value: unknown): value is SheetRecord {
+/**
+ * Checks a stored record, filling in what sheets saved by earlier versions of
+ * the app don't have.
+ */
+function parseSheetRecord(value: unknown): SheetRecord | undefined {
+  if (!isStoredSheetRecord(value)) {
+    return undefined
+  }
+
+  const { lastPage } = value
+  return {
+    ...value,
+    lastPage:
+      typeof lastPage === "number" &&
+      Number.isInteger(lastPage) &&
+      lastPage >= 0 &&
+      lastPage < value.pageCount
+        ? lastPage
+        : 0,
+  }
+}
+
+function isStoredSheetRecord(
+  value: unknown,
+): value is Omit<SheetRecord, "lastPage"> & { lastPage?: unknown } {
   return (
     typeof value === "object" &&
     value !== null &&
