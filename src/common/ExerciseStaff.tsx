@@ -37,6 +37,8 @@ export function ExerciseStaff(props: {
       paddingleft: 0,
       paddingright: 0,
       ariaLabel: props.label,
+      // abcjs defaults to Times New Roman, which isn't installed everywhere.
+      format: { vocalfont: '"Inter Variable" 13 bold' },
     })
   })
 

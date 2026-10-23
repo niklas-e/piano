@@ -46,12 +46,12 @@ export default defineConfig({
           },
         ],
       },
-      // Precache the whole build, including public/ icons, so every route
-      // works offline after the first visit. The glob already covers the
-      // manifest icons, so don't let the plugin add them a second time.
+      // Precache the whole build, including fonts and public/ icons, so every
+      // route works offline after the first visit. The glob already covers
+      // the manifest icons, so don't let the plugin add them a second time.
       includeManifestIcons: false,
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
+        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
       },
     }),
   ],

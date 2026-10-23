@@ -11,7 +11,7 @@ export function GlobalStyles() {
       :root {
         color: #17130f;
         background: #f7f0e6;
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family: "Inter Variable", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         font-synthesis: none;
         line-height: 1.5;
         text-rendering: optimizeLegibility;

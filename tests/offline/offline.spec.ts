@@ -52,6 +52,13 @@ test("app shell reloads offline from the service worker", async ({
   expect(
     await page.evaluate(() => customElements.get("ph-list") !== undefined),
   ).toBe(true)
+  expect(
+    await page.evaluate(() =>
+      [...document.fonts].some(
+        (font) => font.family === "Inter Variable" && font.status === "loaded",
+      ),
+    ),
+  ).toBe(true)
 
   expect(responses.length).toBeGreaterThan(0)
   expect(responses.filter((response) => !response.fromServiceWorker)).toEqual(
