@@ -10,6 +10,7 @@ import {
   readInkColorPreference,
   readLastExerciseIdPreference,
   readLineWidthPreference,
+  readTrimMarginsPreference,
   type StorageLike,
   writeBpmPreference,
   writeExerciseTypeFilterPreference,
@@ -18,6 +19,7 @@ import {
   writeInkColorPreference,
   writeLastExerciseIdPreference,
   writeLineWidthPreference,
+  writeTrimMarginsPreference,
 } from "../../src/common/preferences.ts"
 
 test("BPM preference validates bounds", () => {
@@ -71,6 +73,16 @@ test("half-page turns are off until turned on", () => {
   assert.equal(readHalfPageTurnsPreference(storage), true)
   writeHalfPageTurnsPreference(false, storage)
   assert.equal(readHalfPageTurnsPreference(storage), false)
+})
+
+test("margins are trimmed until turned off", () => {
+  const storage = memoryStorage()
+
+  assert.equal(readTrimMarginsPreference(storage), true)
+  writeTrimMarginsPreference(false, storage)
+  assert.equal(readTrimMarginsPreference(storage), false)
+  writeTrimMarginsPreference(true, storage)
+  assert.equal(readTrimMarginsPreference(storage), true)
 })
 
 test("exercise filter and hand preferences reject invalid stored values", () => {

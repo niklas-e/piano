@@ -39,6 +39,7 @@ const keys = {
   lastExerciseId: "piano:last-exercise-id",
   sightReadingClef: "piano:sight-reading-clef",
   sightReadingDuration: "piano:sight-reading-duration",
+  trimMargins: "piano:trim-margins",
 } as const
 
 export const DEFAULT_SIGHT_READING_CLEF: ClefSetting = "treble"
@@ -181,6 +182,20 @@ export function writeHalfPageTurnsPreference(
   storage = getBrowserStorage(),
 ): void {
   writeStorageItem(storage, keys.halfPageTurns, String(value))
+}
+
+/** On unless turned off, since bigger music is almost always better. */
+export function readTrimMarginsPreference(
+  storage = getBrowserStorage(),
+): boolean {
+  return readStorageItem(storage, keys.trimMargins) !== "false"
+}
+
+export function writeTrimMarginsPreference(
+  value: boolean,
+  storage = getBrowserStorage(),
+): void {
+  writeStorageItem(storage, keys.trimMargins, String(value))
 }
 
 export function readInkColorPreference(

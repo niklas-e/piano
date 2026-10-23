@@ -4,6 +4,11 @@ import { addSheets, createScorePdf } from "../fixtures/sheets"
 // Upright, like a tablet on a music stand, so pages show one at a time.
 test.use({ viewport: { width: 1024, height: 1280 } })
 
+// Whole pages are easier to measure. Trimming has a test of its own.
+test.beforeEach(({ page }) =>
+  page.addInitScript(() => localStorage.setItem("piano:trim-margins", "false")),
+)
+
 async function openSheet(page: Page, pageCount = 3) {
   await page.goto("/sheet-music")
   await addSheets(page, [
@@ -178,6 +183,34 @@ test("half-page turns show the top of the next page first", async ({
   await page.keyboard.press("Escape")
   await page.getByRole("button", { name: "Full screen" }).click()
   await expect(halfPageTurns).toHaveAttribute("aria-pressed", "true")
+})
+
+test("trimming margins makes the music bigger", async ({ page }) => {
+  await openSheet(page)
+  await page.evaluate(() => localStorage.removeItem("piano:trim-margins"))
+  await page.getByRole("button", { name: "Full screen" }).click()
+
+  const dialog = fullScreen(page)
+  const trimMargins = dialog.getByRole("button", { name: "Trim margins" })
+  await expect(trimMargins).toHaveAttribute("aria-pressed", "true")
+
+  // The test score's margins are a tenth of the page on each side, so
+  // without them the page is wider than the screen.
+  const sheetPage = dialog.getByRole("figure", { name: "Page 1 of 3" })
+  await expect
+    .poll(async () => (await sheetPage.boundingBox())?.width)
+    .toBeGreaterThan(1024 * 1.1)
+  const title = await page.evaluate(() =>
+    document
+      .elementFromPoint(1024 * 0.04, 1280 / 2)
+      ?.closest("[aria-label^='Page']")
+      ?.getAttribute("aria-label"),
+  )
+  expect(title).toBe("Page 1 of 3")
+
+  await trimMargins.click()
+  await expect(trimMargins).toHaveAttribute("aria-pressed", "false")
+  await expectWholePage(page, "Page 1 of 3")
 })
 
 test("full screen keeps the screen awake until it closes", async ({ page }) => {

@@ -13,6 +13,11 @@ import { css } from "solid-styled"
 import type { InkPages, Point, Stroke } from "../common/ink"
 import { PhIcon } from "../common/PhIcon"
 import {
+  type PageRegion,
+  regionAspectRatio,
+  WHOLE_PAGE,
+} from "../common/pageMargins"
+import {
   chooseLayout,
   fitPageWidth,
   type Place,
@@ -28,10 +33,13 @@ import {
 } from "../common/pageTurns"
 import {
   readHalfPageTurnsPreference,
+  readTrimMarginsPreference,
   writeHalfPageTurnsPreference,
+  writeTrimMarginsPreference,
 } from "../common/preferences"
 import { exitFullscreen, keepScreenOn } from "../common/screen"
 import { type PageSource, SheetPage } from "./SheetPage"
+import { findTrimRegion } from "./trimMargins"
 
 /** How long the controls stay up after opening, before the music is alone. */
 const initialControlsMs = 2500
@@ -147,6 +155,16 @@ export function FullScreenView(props: {
       color: #1d1712;
     }
 
+    .trim {
+      background: #ffffff;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .trimmed-page {
+      position: absolute;
+    }
+
     /* The top half of the next page, over the end of the one being read. */
     .upcoming {
       align-items: center;
@@ -213,6 +231,43 @@ export function FullScreenView(props: {
   const showView = (index: number) => {
     const all = views()
     setPlace(placeOfView(all[Math.min(all.length - 1, Math.max(0, index))]))
+  }
+  const [trimMargins, setTrimMargins] = createSignal(
+    readTrimMarginsPreference(),
+  )
+  const [trimmed, setTrimmed] = createSignal<PageRegion>()
+  createEffect(() => {
+    if (trimMargins() && !trimmed()) {
+      void findTrimRegion(props.pages).then(setTrimmed, () =>
+        setTrimmed(WHOLE_PAGE),
+      )
+    }
+  })
+  /** What shows of every page: all of it, or only the music on it. */
+  const region = () => (trimMargins() && trimmed()) || WHOLE_PAGE
+
+  /**
+   * Sizes a page so the region of it on show fits, and places it so that
+   * region is what the clipping box around it shows.
+   */
+  const pageGeometry = (source: PageSource) => {
+    const shown = region()
+    const aspectRatio = regionAspectRatio(source.aspectRatio, shown)
+    const visibleWidth = fitPageWidth(pageBox(stage(), layout()), aspectRatio)
+    const width = visibleWidth / (shown.right - shown.left)
+    return {
+      width,
+      visibleWidth,
+      visibleHeight: visibleWidth * aspectRatio,
+      left: -shown.left * width,
+      top: -shown.top * width * source.aspectRatio,
+    }
+  }
+
+  const toggleTrimMargins = () => {
+    const enabled = !trimMargins()
+    setTrimMargins(enabled)
+    writeTrimMarginsPreference(enabled)
   }
   const toggleHalfPageTurns = () => {
     const enabled = !halfPageTurns()
@@ -389,26 +444,42 @@ export function FullScreenView(props: {
       >
         <Show when={stage().width > 0}>
           <Index each={props.pages}>
-            {(source, index) => (
-              <div
-                class={upcomingPage() === index ? "upcoming" : undefined}
-                hidden={!isVisible(index)}
-              >
-                <SheetPage
-                  index={index}
-                  pageCount={props.pages.length}
-                  source={source()}
-                  width={fitPageWidth(
-                    pageBox(stage(), layout()),
-                    source().aspectRatio,
-                  )}
-                  strokes={props.ink[index]}
-                  draft={undefined}
-                  hidden={noStrokes}
-                  active={isActive(index)}
-                />
-              </div>
-            )}
+            {(source, index) => {
+              const geometry = () => pageGeometry(source())
+              return (
+                <div
+                  class={upcomingPage() === index ? "upcoming" : undefined}
+                  hidden={!isVisible(index)}
+                >
+                  <div
+                    class="trim"
+                    style={{
+                      width: `${geometry().visibleWidth}px`,
+                      height: `${geometry().visibleHeight}px`,
+                    }}
+                  >
+                    <div
+                      class="trimmed-page"
+                      style={{
+                        left: `${geometry().left}px`,
+                        top: `${geometry().top}px`,
+                      }}
+                    >
+                      <SheetPage
+                        index={index}
+                        pageCount={props.pages.length}
+                        source={source()}
+                        width={geometry().width}
+                        strokes={props.ink[index]}
+                        draft={undefined}
+                        hidden={noStrokes}
+                        active={isActive(index)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            }}
           </Index>
           <Show when={upcomingPage() !== undefined}>
             <div class="half-divider" />
@@ -427,6 +498,16 @@ export function FullScreenView(props: {
           <PhIcon name="corners-in" aria-hidden="true" size={22} />
         </button>
         <p class="title">{props.name}</p>
+        <button
+          type="button"
+          class="control"
+          aria-label="Trim margins"
+          title="Trim margins: leave out the empty edges of the pages, so the music is bigger"
+          aria-pressed={trimMargins()}
+          onClick={toggleTrimMargins}
+        >
+          <PhIcon name="crop" aria-hidden="true" size={22} />
+        </button>
         <button
           type="button"
           class="control"
