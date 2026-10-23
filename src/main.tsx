@@ -1,6 +1,7 @@
 import { render } from "solid-js/web"
 import App from "./App"
 import "./common/registerPhosphorIcons"
+import { requestPersistentStorage } from "./common/persistentStorage"
 
 const root = document.getElementById("root")
 
@@ -9,3 +10,5 @@ if (!root) {
 }
 
 render(() => <App />, root)
+
+void requestPersistentStorage()
