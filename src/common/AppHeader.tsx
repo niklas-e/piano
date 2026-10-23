@@ -9,10 +9,7 @@ const primaryNavigationItems = [
   { href: "/sight-reading", label: "Sight Reading" },
 ] as const
 
-export function AppHeader(props: {
-  route: Route
-  navigate: (href: string) => (event: MouseEvent) => void
-}) {
+export function AppHeader(props: { route: Route }) {
   css`
     .site-header {
       align-items: center;
@@ -102,22 +99,11 @@ export function AppHeader(props: {
     setIsMenuOpen(false)
   })
 
-  const handleNavigation = (href: string) => {
-    const navigate = props.navigate(href)
-
-    return (event: MouseEvent) => {
-      setIsMenuOpen(false)
-      navigate(event)
-    }
-  }
+  const closeMenu = () => setIsMenuOpen(false)
 
   return (
     <header class="site-header">
-      <a
-        class="site-title"
-        href={headerLink().href}
-        onClick={handleNavigation(headerLink().href)}
-      >
+      <a class="site-title" href={headerLink().href} onClick={closeMenu}>
         <img class="site-logo" src="/logo.svg" alt="" aria-hidden="true" />
         {headerLink().title}
       </a>
@@ -148,7 +134,7 @@ export function AppHeader(props: {
           {(item) => (
             <a
               href={item.href}
-              onClick={handleNavigation(item.href)}
+              onClick={closeMenu}
               aria-current={
                 isPrimaryNavigationRoute(props.route, item.href)
                   ? "page"

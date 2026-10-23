@@ -34,20 +34,36 @@ export default function App() {
 
   onMount(() => {
     const handlePopState = () => setPathname(window.location.pathname)
-    window.addEventListener("popstate", handlePopState)
-    onCleanup(() => window.removeEventListener("popstate", handlePopState))
-  })
+    // Route every same-origin link through the client-side router so that
+    // navigation never reloads the page, which keeps it instant and offline.
+    const handleClick = (event: MouseEvent) => {
+      const href = getInAppHref(event)
+      if (href === undefined) {
+        return
+      }
 
-  const navigate = (href: string) => (event: MouseEvent) => {
-    event.preventDefault()
-    window.history.pushState({}, "", href)
-    setPathname(window.location.pathname)
-  }
+      event.preventDefault()
+      if (href === currentHref()) {
+        return
+      }
+
+      window.history.pushState({}, "", href)
+      setPathname(window.location.pathname)
+      window.scrollTo(0, 0)
+    }
+
+    window.addEventListener("popstate", handlePopState)
+    document.addEventListener("click", handleClick)
+    onCleanup(() => {
+      window.removeEventListener("popstate", handlePopState)
+      document.removeEventListener("click", handleClick)
+    })
+  })
 
   return (
     <div class="app-shell">
       <GlobalStyles />
-      <AppHeader route={route()} navigate={navigate} />
+      <AppHeader route={route()} />
 
       <main class="content">
         <Switch>
@@ -78,4 +94,37 @@ export default function App() {
       </main>
     </div>
   )
+}
+
+function getInAppHref(event: MouseEvent): string | undefined {
+  if (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey ||
+    !(event.target instanceof Element)
+  ) {
+    return undefined
+  }
+
+  const anchor = event.target.closest("a")
+  if (
+    !anchor ||
+    (anchor.target !== "" && anchor.target !== "_self") ||
+    anchor.hasAttribute("download")
+  ) {
+    return undefined
+  }
+
+  const url = new URL(anchor.href)
+  return url.origin === window.location.origin
+    ? url.pathname + url.search + url.hash
+    : undefined
+}
+
+function currentHref(): string {
+  const { pathname, search, hash } = window.location
+  return pathname + search + hash
 }

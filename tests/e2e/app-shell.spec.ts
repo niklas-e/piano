@@ -42,3 +42,59 @@ test("unknown routes render useful navigation", async ({ page }) => {
     page.getByRole("link", { name: "Go to metronome" }),
   ).toHaveAttribute("href", "/metronome")
 })
+
+test("in-app links navigate without reloading the page", async ({ page }) => {
+  // A full page load would wipe this marker from the window.
+  const markDocument = () =>
+    page.evaluate(() => Object.assign(window, { notReloaded: true }))
+  const expectSameDocument = async () =>
+    expect(await page.evaluate(() => "notReloaded" in window)).toBe(true)
+
+  await page.goto("/")
+  await markDocument()
+
+  await page
+    .getByRole("navigation", { name: "Practice tools" })
+    .getByRole("link", { name: /Exercises/ })
+    .click()
+  await expect(page).toHaveURL("/exercises")
+  await expectSameDocument()
+
+  await page.mouse.wheel(0, 600)
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(0)
+  await page
+    .getByRole("link", { name: /A major scale/ })
+    .first()
+    .click()
+  await expect(
+    page.getByRole("heading", { name: "A major scale" }),
+  ).toBeVisible()
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+  await expectSameDocument()
+
+  await page.goBack()
+  await expect(page).toHaveURL("/exercises")
+  await expectSameDocument()
+
+  await page.goto("/exercises/not-a-real-exercise")
+  await markDocument()
+  await page.getByRole("link", { name: "Back to exercises" }).click()
+  await expect(page).toHaveURL("/exercises")
+  await expectSameDocument()
+})
+
+test("modified clicks are left to the browser", async ({ page, context }) => {
+  await page.goto("/")
+
+  const newPagePromise = context.waitForEvent("page")
+  await page
+    .getByRole("navigation", { name: "Practice tools" })
+    .getByRole("link", { name: /Metronome/ })
+    .click({ modifiers: ["ControlOrMeta"] })
+  const newPage = await newPagePromise
+
+  await expect(newPage).toHaveURL("/metronome")
+  await expect(page).toHaveURL("/")
+})
