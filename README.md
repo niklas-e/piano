@@ -47,7 +47,8 @@ Page Up/Down and Space, which is also what Bluetooth page turner pedals send.
 Half-page turns, an option in full screen, show the top of the next page while
 the bottom of the current one is still being played. Full screen also trims
 the empty margins of the pages, by the same amount on every page so the music
-stays the same size throughout.
+stays the same size throughout. A stylus still draws in full screen, while
+fingers turn the pages.
 
 PDFs are rendered with PDF.js. Its data files (image decoders, standard fonts,
 colour profiles and character maps) are served from `/pdfjs/` by a small Vite

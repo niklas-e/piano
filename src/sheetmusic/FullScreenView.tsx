@@ -10,7 +10,7 @@ import {
   Show,
 } from "solid-js"
 import { css } from "solid-styled"
-import type { InkPages, Point, Stroke } from "../common/ink"
+import type { InkPages, Point } from "../common/ink"
 import { PhIcon } from "../common/PhIcon"
 import {
   type PageRegion,
@@ -39,11 +39,11 @@ import {
 } from "../common/preferences"
 import { exitFullscreen, keepScreenOn } from "../common/screen"
 import { type PageSource, SheetPage } from "./SheetPage"
+import { createStrokeInput, type StrokeStyle } from "./strokeInput"
 import { findTrimRegion } from "./trimMargins"
 
 /** How long the controls stay up after opening, before the music is alone. */
 const initialControlsMs = 2500
-const noStrokes: ReadonlySet<Stroke> = new Set()
 
 const forwardKeys = new Set(["ArrowRight", "ArrowDown", "PageDown", " "])
 const backKeys = new Set(["ArrowLeft", "ArrowUp", "PageUp"])
@@ -58,6 +58,11 @@ export function FullScreenView(props: {
   name: string
   ink: InkPages
   startPage: number
+  /** What a stylus draws with. Fingers and the mouse turn pages. */
+  stylusStyle: StrokeStyle | "eraser"
+  canUndo: boolean
+  onInkChange: (change: (pages: InkPages) => InkPages) => void
+  onUndo: () => void
   onPageChange: (page: number) => void
   onExit: (page: number) => void
 }) {
@@ -150,6 +155,20 @@ export function FullScreenView(props: {
       background: rgba(255, 250, 242, 0.12);
     }
 
+    /* On phones, the title gets a row of its own above the buttons. */
+    @media (max-width: 560px) {
+      .controls {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+      }
+
+      .title {
+        flex-basis: 100%;
+        order: -1;
+        padding-inline: 0.5rem;
+      }
+    }
+
     .control[aria-pressed="true"] {
       background: #fffaf2;
       color: #1d1712;
@@ -224,6 +243,11 @@ export function FullScreenView(props: {
     views()
       .slice(Math.max(0, viewIndex() - 1), viewIndex() + 2)
       .some((nearby) => viewPages(nearby).includes(page))
+
+  const strokeInput = createStrokeInput({
+    ink: () => props.ink,
+    commit: (change) => props.onInkChange(change),
+  })
 
   let dialog: HTMLDialogElement | undefined
   let stageElement: HTMLDivElement | undefined
@@ -371,7 +395,24 @@ export function FullScreenView(props: {
   const handlePointerDown: JSX.EventHandler<HTMLDivElement, PointerEvent> = (
     event,
   ) => {
-    if (event.pointerType === "mouse" && event.button !== 0) {
+    if (event.pointerType === "pen") {
+      const page =
+        event.target instanceof Element
+          ? event.target.closest<HTMLElement>("[data-page-index]")
+          : null
+      if (page && !strokeInput.isActive()) {
+        event.preventDefault()
+        event.currentTarget.setPointerCapture(event.pointerId)
+        strokeInput.start(event, page, props.stylusStyle)
+      }
+      return
+    }
+
+    // A palm resting while the stylus draws mustn't turn the page.
+    if (
+      strokeInput.isActive() ||
+      (event.pointerType === "mouse" && event.button !== 0)
+    ) {
       return
     }
 
@@ -384,6 +425,7 @@ export function FullScreenView(props: {
   const handlePointerUp: JSX.EventHandler<HTMLDivElement, PointerEvent> = (
     event,
   ) => {
+    strokeInput.end(event, false)
     pointers.delete(event.pointerId)
     if (pointerStart?.id !== event.pointerId) {
       return
@@ -415,6 +457,7 @@ export function FullScreenView(props: {
   }
 
   const handlePointerCancel = (event: PointerEvent) => {
+    strokeInput.end(event, true)
     pointers.delete(event.pointerId)
     if (pointerStart?.id === event.pointerId) {
       pointerStart = undefined
@@ -438,8 +481,10 @@ export function FullScreenView(props: {
         tabIndex={-1}
         autofocus
         onPointerDown={handlePointerDown}
+        onPointerMove={(event) => strokeInput.move(event)}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
+        onLostPointerCapture={handlePointerCancel}
         onContextMenu={(event) => event.preventDefault()}
       >
         <Show when={stage().width > 0}>
@@ -471,8 +516,12 @@ export function FullScreenView(props: {
                         source={source()}
                         width={geometry().width}
                         strokes={props.ink[index]}
-                        draft={undefined}
-                        hidden={noStrokes}
+                        draft={
+                          strokeInput.draft()?.pageIndex === index
+                            ? strokeInput.draft()?.stroke
+                            : undefined
+                        }
+                        hidden={strokeInput.erased()}
                         active={isActive(index)}
                       />
                     </div>
@@ -498,6 +547,16 @@ export function FullScreenView(props: {
           <PhIcon name="corners-in" aria-hidden="true" size={22} />
         </button>
         <p class="title">{props.name}</p>
+        <button
+          type="button"
+          class="control"
+          aria-label="Undo"
+          title="Undo"
+          disabled={!props.canUndo}
+          onClick={() => props.onUndo()}
+        >
+          <PhIcon name="arrow-counter-clockwise" aria-hidden="true" size={22} />
+        </button>
         <button
           type="button"
           class="control"

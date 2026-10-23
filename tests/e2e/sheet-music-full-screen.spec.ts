@@ -213,6 +213,74 @@ test("trimming margins makes the music bigger", async ({ page }) => {
   await expectWholePage(page, "Page 1 of 3")
 })
 
+test("a stylus draws in full screen while taps still turn pages", async ({
+  page,
+}) => {
+  await openSheet(page)
+  await page.getByRole("button", { name: "Full screen" }).click()
+  const dialog = fullScreen(page)
+  await expectWholePage(page, "Page 1 of 3")
+
+  const client = await page.context().newCDPSession(page)
+  const stylus = async (points: [number, number][]) => {
+    const [first, ...rest] = points
+    const event = (
+      type: "mousePressed" | "mouseMoved" | "mouseReleased",
+      [x, y]: [number, number],
+    ) =>
+      client.send("Input.dispatchMouseEvent", {
+        type,
+        x,
+        y,
+        button: "left",
+        buttons: type === "mouseReleased" ? 0 : 1,
+        clickCount: 1,
+        pointerType: "pen",
+      })
+    await event("mousePressed", first)
+    for (const point of rest) {
+      await event("mouseMoved", point)
+    }
+    await event("mouseReleased", rest[rest.length - 1])
+  }
+
+  const strokes = dialog.locator('[data-ink-layer="pen"] path')
+  await stylus([
+    [300, 400],
+    [500, 420],
+    [700, 400],
+  ])
+  await expect(strokes).toHaveCount(1)
+  // Drawing on the right of the page didn't turn it.
+  await expectWholePage(page, "Page 1 of 3")
+
+  // A tap in the middle brings back the controls, if they've gone.
+  if ((await dialog.getAttribute("data-controls")) === "hidden") {
+    await page.mouse.click(viewportCenter(page).x, viewportCenter(page).y)
+  }
+  await dialog.getByRole("button", { name: "Undo" }).click()
+  await expect(strokes).toHaveCount(0)
+
+  await stylus([
+    [300, 600],
+    [700, 600],
+  ])
+  await page.keyboard.press("Escape")
+  await expect(dialog).toBeHidden()
+  await expect(
+    page.locator('[data-page-index="0"] [data-ink-layer="pen"] path'),
+  ).toHaveCount(1)
+  await expect(page.getByRole("status")).toHaveText("Saved")
+})
+
+function viewportCenter(page: Page) {
+  const viewport = page.viewportSize()
+  if (!viewport) {
+    throw new Error("No viewport")
+  }
+  return { x: viewport.width / 2, y: viewport.height / 2 }
+}
+
 test("full screen keeps the screen awake until it closes", async ({ page }) => {
   await page.addInitScript(() => {
     const log: string[] = []
@@ -244,6 +312,23 @@ test("full screen keeps the screen awake until it closes", async ({ page }) => {
   await page.keyboard.press("Escape")
   await expect(fullScreen(page)).toBeHidden()
   await expect.poll(wakeLockLog).toEqual(["request", "release"])
+})
+
+test.describe("on a phone", () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test("the full screen controls fit", async ({ page }) => {
+    await openSheet(page)
+    await page.getByRole("button", { name: "Full screen" }).click()
+
+    const dialog = fullScreen(page)
+    for (const name of ["Exit full screen", "Undo", "Next page"]) {
+      await expect(dialog.getByRole("button", { name })).toBeInViewport({
+        ratio: 1,
+      })
+    }
+    await expect(dialog.getByText("Etude in C")).toBeInViewport()
+  })
 })
 
 test.describe("on a landscape screen", () => {

@@ -44,7 +44,7 @@ import { FullScreenView } from "./FullScreenView"
 import { sheetMusicLibrary } from "./library"
 import { SheetPage } from "./SheetPage"
 import type { LoadedSheet } from "./SheetViewerPage"
-import { createStrokeInput } from "./strokeInput"
+import { createStrokeInput, type StrokeStyle } from "./strokeInput"
 
 /** Drawing and erasing are handled by `createStrokeInput`. */
 type Gesture =
@@ -289,6 +289,20 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   const [currentPage, setCurrentPage] = createSignal(sheet.record.lastPage)
   const [fullScreen, setFullScreen] = createSignal<{ startPage: number }>()
 
+  const strokeStyle = (tool: InkTool): StrokeStyle => ({
+    tool,
+    color: colors()[tool],
+    width: LINE_WIDTHS[tool][lineWidths()[tool]],
+  })
+  /** A stylus in full screen draws with the chosen tool, or else the pen. */
+  const stylusStyle = (): StrokeStyle | "eraser" => {
+    const current = tool()
+    if (current === "eraser") {
+      return "eraser"
+    }
+    return strokeStyle(current === "scroll" ? "pen" : current)
+  }
+
   const inkTool = (): InkTool | undefined => {
     const current = tool()
     return current === "pen" || current === "highlighter" ? current : undefined
@@ -525,6 +539,8 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
 
   // --- Editing --------------------------------------------------------------
 
+  const changeInk = (change: (pages: InkPages) => InkPages) =>
+    setInk((history) => commitInk(history, change(history.present)))
   const undo = () => setInk(undoInk)
   const redo = () => setInk(redoInk)
   const clearAll = () =>
@@ -584,8 +600,7 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
 
   const strokeInput = createStrokeInput({
     ink: () => ink().present,
-    commit: (change) =>
-      setInk((history) => commitInk(history, change(history.present))),
+    commit: changeInk,
   })
   const { draft, erased } = strokeInput
 
@@ -646,13 +661,7 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
     strokeInput.start(
       event,
       page,
-      currentTool === "eraser"
-        ? "eraser"
-        : {
-            tool: currentTool,
-            color: colors()[currentTool],
-            width: LINE_WIDTHS[currentTool][lineWidths()[currentTool]],
-          },
+      currentTool === "eraser" ? "eraser" : strokeStyle(currentTool),
     )
   }
 
@@ -1100,6 +1109,10 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
             name={name()}
             ink={ink().present}
             startPage={entered().startPage}
+            stylusStyle={stylusStyle()}
+            canUndo={ink().past.length > 0}
+            onInkChange={changeInk}
+            onUndo={undo}
             onPageChange={setCurrentPage}
             onExit={exitFullScreen}
           />
