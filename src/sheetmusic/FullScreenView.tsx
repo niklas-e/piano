@@ -196,9 +196,13 @@ export function FullScreenView(props: {
     onCleanup(() => observer.disconnect())
 
     // Leaving the browser's full screen, with Escape or a system gesture,
-    // leaves this view too.
+    // leaves this view too. Only once it was entered, since leaving it from
+    // an earlier visit can still be underway.
+    let wasFullscreen = false
     const handleFullscreenChange = () => {
-      if (!document.fullscreenElement) {
+      if (document.fullscreenElement) {
+        wasFullscreen = true
+      } else if (wasFullscreen) {
         close()
       }
     }
