@@ -12,18 +12,14 @@ import {
 import { css } from "solid-styled"
 import {
   type DrawingTool,
-  ERASER_RADIUS_PX,
   INK_COLORS,
   LINE_WIDTH_OPTIONS,
   LINE_WIDTHS,
   type LineWidthName,
   MAX_FIT_WIDTH_PX,
-  MIN_POINT_DISTANCE_PX,
   ZOOM_LEVELS,
 } from "../common/drawingTools"
 import {
-  addStroke,
-  appendPoint,
   commitInk,
   createInkHistory,
   type InkPages,
@@ -31,9 +27,6 @@ import {
   inkStrokeCount,
   type Point,
   redoInk,
-  removeStrokes,
-  type Stroke,
-  strokesTouchedByEraser,
   undoInk,
 } from "../common/ink"
 import { PhIcon } from "../common/PhIcon"
@@ -51,23 +44,11 @@ import { FullScreenView } from "./FullScreenView"
 import { sheetMusicLibrary } from "./library"
 import { SheetPage } from "./SheetPage"
 import type { LoadedSheet } from "./SheetViewerPage"
+import { createStrokeInput } from "./strokeInput"
 
+/** Drawing and erasing are handled by `createStrokeInput`. */
 type Gesture =
   | { type: "none" }
-  | {
-      type: "draw"
-      pointerId: number
-      pageIndex: number
-      page: HTMLElement
-      stroke: Stroke
-    }
-  | {
-      type: "erase"
-      pointerId: number
-      pageIndex: number
-      page: HTMLElement
-      last: Point
-    }
   | {
       type: "pan"
       last: Point
@@ -301,11 +282,6 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   })
   const [zoom, setZoom] = createSignal(1)
   const [fitWidth, setFitWidth] = createSignal(0)
-  const [draft, setDraft] = createSignal<{
-    pageIndex: number
-    stroke: Stroke
-  }>()
-  const [erased, setErased] = createSignal<ReadonlySet<Stroke>>(new Set())
   const [saveState, setSaveState] = createSignal<SaveState>("saved")
   const [exportState, setExportState] = createSignal<ExportState>("idle")
   const [name, setName] = createSignal(sheet.record.name)
@@ -606,42 +582,16 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
     }
   }
 
+  const strokeInput = createStrokeInput({
+    ink: () => ink().present,
+    commit: (change) =>
+      setInk((history) => commitInk(history, change(history.present))),
+  })
+  const { draft, erased } = strokeInput
+
   const cancelGesture = () => {
     gesture = { type: "none" }
-    setDraft(undefined)
-    setErased(new Set<Stroke>())
-  }
-
-  const finishGesture = () => {
-    if (gesture.type === "draw") {
-      const { pageIndex, stroke } = gesture
-      setInk((history) =>
-        commitInk(history, addStroke(history.present, pageIndex, stroke)),
-      )
-    } else if (gesture.type === "erase" && erased().size > 0) {
-      const removed = erased()
-      setInk((history) =>
-        commitInk(history, removeStrokes(history.present, removed)),
-      )
-    }
-
-    cancelGesture()
-  }
-
-  const eraseAlong = (from: Point, to: Point, page: HTMLElement) => {
-    if (gesture.type !== "erase") {
-      return
-    }
-
-    const alreadyErased = erased()
-    const candidates = ink().present[gesture.pageIndex].filter(
-      (stroke) => !alreadyErased.has(stroke),
-    )
-    const radius = ERASER_RADIUS_PX / page.getBoundingClientRect().width
-    const touched = strokesTouchedByEraser(candidates, from, to, radius)
-    if (touched.length > 0) {
-      setErased(new Set([...alreadyErased, ...touched]))
-    }
+    strokeInput.cancel()
   }
 
   const handlePointerDown: JSX.EventHandler<HTMLDivElement, PointerEvent> = (
@@ -677,6 +627,7 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
 
     if (
       gesture.type !== "none" ||
+      strokeInput.isActive() ||
       (event.pointerType === "mouse" && event.button !== 0)
     ) {
       return
@@ -692,35 +643,17 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
 
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
-    const pageIndex = Number(page.dataset.pageIndex)
-    const point = pagePoint(event, page)
-
-    if (currentTool === "eraser") {
-      gesture = {
-        type: "erase",
-        pointerId: event.pointerId,
-        pageIndex,
-        page,
-        last: point,
-      }
-      eraseAlong(point, point, page)
-      return
-    }
-
-    const stroke: Stroke = {
-      tool: currentTool,
-      color: colors()[currentTool],
-      width: LINE_WIDTHS[currentTool][lineWidths()[currentTool]],
-      points: appendPoint([], point, 0),
-    }
-    gesture = {
-      type: "draw",
-      pointerId: event.pointerId,
-      pageIndex,
+    strokeInput.start(
+      event,
       page,
-      stroke,
-    }
-    setDraft({ pageIndex, stroke })
+      currentTool === "eraser"
+        ? "eraser"
+        : {
+            tool: currentTool,
+            color: colors()[currentTool],
+            width: LINE_WIDTHS[currentTool][lineWidths()[currentTool]],
+          },
+    )
   }
 
   const handlePointerMove: JSX.EventHandler<HTMLDivElement, PointerEvent> = (
@@ -749,37 +682,8 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
       }
     }
 
-    if (gesture.type === "none" || gesture.type === "pan") {
-      return
-    }
-    if (gesture.pointerId !== event.pointerId) {
-      return
-    }
-
-    const { page } = gesture
-    const samples = event.getCoalescedEvents?.() ?? []
-    const events = samples.length > 0 ? samples : [event]
-
-    if (gesture.type === "erase") {
-      for (const sample of events) {
-        const point = pagePoint(sample, page)
-        eraseAlong(gesture.last, point, page)
-        gesture = { ...gesture, last: point }
-      }
-      return
-    }
-
-    const minDistance =
-      MIN_POINT_DISTANCE_PX / page.getBoundingClientRect().width
-    let { points } = gesture.stroke
-    for (const sample of events) {
-      points = appendPoint(points, pagePoint(sample, page), minDistance)
-    }
-
-    if (points !== gesture.stroke.points) {
-      const stroke = { ...gesture.stroke, points }
-      gesture = { ...gesture, stroke }
-      setDraft({ pageIndex: gesture.pageIndex, stroke })
+    if (gesture.type === "none") {
+      strokeInput.move(event)
     }
   }
 
@@ -793,12 +697,7 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
       return
     }
 
-    if (
-      (gesture.type === "draw" || gesture.type === "erase") &&
-      gesture.pointerId === event.pointerId
-    ) {
-      isCancelled && gesture.type === "draw" ? cancelGesture() : finishGesture()
-    }
+    strokeInput.end(event, isCancelled)
   }
 
   // --- Exporting ------------------------------------------------------------
@@ -1220,12 +1119,4 @@ function centroid(points: readonly Point[]): Point {
 
 function distance(a: Point, b: Point): number {
   return Math.max(1, Math.hypot(a.x - b.x, a.y - b.y))
-}
-
-function pagePoint(event: PointerEvent, page: HTMLElement): Point {
-  const rect = page.getBoundingClientRect()
-  return {
-    x: (event.clientX - rect.left) / rect.width,
-    y: (event.clientY - rect.top) / rect.width,
-  }
 }
