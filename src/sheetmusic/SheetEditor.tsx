@@ -96,11 +96,6 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
       gap: 0.75rem;
     }
 
-    /* Hidden while in full screen, which also frees its rendered pages. */
-    .sheet-editor[hidden] {
-      display: none;
-    }
-
     .viewer-heading {
       align-items: baseline;
       display: flex;
@@ -316,10 +311,7 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   const [name, setName] = createSignal(sheet.record.name)
   const [renameFailed, setRenameFailed] = createSignal(false)
   const [currentPage, setCurrentPage] = createSignal(sheet.record.lastPage)
-  const [fullScreen, setFullScreen] = createSignal<{
-    startPage: number
-    scroll: Point
-  }>()
+  const [fullScreen, setFullScreen] = createSignal<{ startPage: number }>()
 
   const inkTool = (): InkTool | undefined => {
     const current = tool()
@@ -418,12 +410,8 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
     }
 
     const target = scroller
-    const updateFitWidth = () => {
-      // Keep the layout while hidden, so scroll positions still fit after.
-      if (target.clientWidth > 0) {
-        setFitWidth(Math.min(target.clientWidth, MAX_FIT_WIDTH_PX))
-      }
-    }
+    const updateFitWidth = () =>
+      setFitWidth(Math.min(target.clientWidth, MAX_FIT_WIDTH_PX))
     updateFitWidth()
     const observer = new ResizeObserver(updateFitWidth)
     observer.observe(target)
@@ -519,8 +507,8 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
     let frame: number | undefined
     const updateCurrentPage = () => {
       frame = undefined
-      // Full screen keeps track of its own page while the pages here are
-      // hidden.
+      // Full screen keeps track of its own page, while resizing to it
+      // moves the pages here.
       if (fullScreen() === undefined) {
         setCurrentPage(pageInView())
       }
@@ -540,29 +528,23 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   const enterFullScreen = () => {
     // Asked for straight away, while the tap still allows it.
     requestFullscreen()
-    setFullScreen({
-      startPage: pageInView(),
-      scroll: { x: scroller?.scrollLeft ?? 0, y: window.scrollY },
-    })
+    setFullScreen({ startPage: pageInView() })
   }
 
   const exitFullScreen = (page: number) => {
-    const entered = fullScreen()
+    const { startPage } = fullScreen() ?? {}
     setFullScreen(undefined)
-    const restoreScroll = () => {
-      if (entered?.startPage === page) {
-        window.scrollTo(0, entered.scroll.y)
-        if (scroller) {
-          scroller.scrollLeft = entered.scroll.x
-        }
-      } else {
-        pageElements()[page]?.scrollIntoView({ block: "start" })
-      }
+    // Without turning, the pages are still where they were left.
+    if (page === startPage) {
+      return
     }
-    restoreScroll()
-    // Browsers put back the scroll position they had when entering full
-    // screen, which was while the pages were hidden.
-    void exitFullscreen().then(restoreScroll)
+
+    const showPage = () =>
+      pageElements()[page]?.scrollIntoView({ block: "start" })
+    showPage()
+    // Leaving the browser's full screen puts back the scroll position from
+    // before it.
+    void exitFullscreen().then(showPage)
   }
 
   // --- Editing --------------------------------------------------------------
@@ -937,11 +919,7 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
 
   return (
     <>
-      <section
-        class="sheet-editor"
-        aria-labelledby="sheet-title"
-        hidden={fullScreen() !== undefined}
-      >
+      <section class="sheet-editor" aria-labelledby="sheet-title">
         <div class="viewer-heading">
           <EditableTitle id="sheet-title" title={name()} onRename={rename} />
           <p
@@ -1205,6 +1183,9 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
                       draft()?.pageIndex === index ? draft()?.stroke : undefined
                     }
                     hidden={erased()}
+                    // Full screen covers these, so their memory is better
+                    // spent on its own pages.
+                    active={fullScreen() ? false : undefined}
                   />
                 )}
               </Index>

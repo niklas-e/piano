@@ -51,6 +51,8 @@ export function FullScreenView(props: {
       max-height: none;
       max-width: none;
       overflow: hidden;
+      /* The sheet behind keeps its scroll position. */
+      overscroll-behavior: contain;
       position: fixed;
       touch-action: none;
       width: 100%;
