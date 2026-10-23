@@ -1,4 +1,11 @@
+import {
+  DEFAULT_LINE_WIDTH,
+  INK_COLORS,
+  LINE_WIDTH_OPTIONS,
+  type LineWidthName,
+} from "./drawingTools.ts"
 import type { ExerciseType, Hand } from "./exercises.ts"
+import type { InkTool } from "./ink.ts"
 import {
   CLEF_SETTINGS,
   type ClefSetting,
@@ -20,6 +27,14 @@ const keys = {
   bpm: "piano:bpm",
   exerciseTypeFilter: "piano:exercise-type-filter",
   hand: "piano:hand",
+  inkColor: {
+    pen: "piano:ink-color:pen",
+    highlighter: "piano:ink-color:highlighter",
+  },
+  lineWidth: {
+    pen: "piano:line-width:pen",
+    highlighter: "piano:line-width:highlighter",
+  },
   lastExerciseId: "piano:last-exercise-id",
   sightReadingClef: "piano:sight-reading-clef",
   sightReadingDuration: "piano:sight-reading-duration",
@@ -152,6 +167,48 @@ export function writeSightReadingDurationPreference(
     keys.sightReadingDuration,
     String(durations.has(seconds) ? seconds : DEFAULT_SIGHT_READING_DURATION),
   )
+}
+
+export function readInkColorPreference(
+  tool: InkTool,
+  storage = getBrowserStorage(),
+): string {
+  const rawValue = readStorageItem(storage, keys.inkColor[tool])
+  const colors = INK_COLORS[tool]
+
+  return (
+    colors.find((color) => color.value === rawValue)?.value ?? colors[0].value
+  )
+}
+
+export function writeInkColorPreference(
+  tool: InkTool,
+  color: string,
+  storage = getBrowserStorage(),
+): void {
+  if (INK_COLORS[tool].some((option) => option.value === color)) {
+    writeStorageItem(storage, keys.inkColor[tool], color)
+  }
+}
+
+export function readLineWidthPreference(
+  tool: InkTool,
+  storage = getBrowserStorage(),
+): LineWidthName {
+  const rawValue = readStorageItem(storage, keys.lineWidth[tool])
+
+  return (
+    LINE_WIDTH_OPTIONS.find((option) => option.name === rawValue)?.name ??
+    DEFAULT_LINE_WIDTH
+  )
+}
+
+export function writeLineWidthPreference(
+  tool: InkTool,
+  width: LineWidthName,
+  storage = getBrowserStorage(),
+): void {
+  writeStorageItem(storage, keys.lineWidth[tool], width)
 }
 
 function isValidBpm(value: number): boolean {

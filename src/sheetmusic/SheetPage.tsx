@@ -42,6 +42,7 @@ export function SheetPage(props: {
       position: relative;
       /* Leave room for the sticky toolbar when a page is scrolled to. */
       scroll-margin-top: 8rem;
+      -webkit-touch-callout: none;
       user-select: none;
       -webkit-user-select: none;
     }

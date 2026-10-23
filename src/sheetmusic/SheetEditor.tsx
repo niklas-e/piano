@@ -11,6 +11,17 @@ import {
 } from "solid-js"
 import { css } from "solid-styled"
 import {
+  type DrawingTool,
+  ERASER_RADIUS_PX,
+  INK_COLORS,
+  LINE_WIDTH_OPTIONS,
+  LINE_WIDTHS,
+  type LineWidthName,
+  MAX_FIT_WIDTH_PX,
+  MIN_POINT_DISTANCE_PX,
+  ZOOM_LEVELS,
+} from "../common/drawingTools"
+import {
   addStroke,
   appendPoint,
   commitInk,
@@ -27,18 +38,13 @@ import {
 } from "../common/ink"
 import { PhIcon } from "../common/PhIcon"
 import type { IconName } from "../common/phosphorIcons"
-import { downloadFile, exportAnnotatedSheet } from "../common/sheetExport"
 import {
-  type DrawingTool,
-  ERASER_RADIUS_PX,
-  INK_COLORS,
-  LINE_WIDTH_OPTIONS,
-  LINE_WIDTHS,
-  type LineWidthName,
-  MAX_FIT_WIDTH_PX,
-  MIN_POINT_DISTANCE_PX,
-  ZOOM_LEVELS,
-} from "./drawingTools"
+  readInkColorPreference,
+  readLineWidthPreference,
+  writeInkColorPreference,
+  writeLineWidthPreference,
+} from "../common/preferences"
+import { downloadFile, exportAnnotatedSheet } from "../common/sheetExport"
 import { sheetMusicLibrary } from "./library"
 import { SheetPage } from "./SheetPage"
 import type { LoadedSheet } from "./SheetViewerPage"
@@ -59,7 +65,12 @@ type Gesture =
       page: HTMLElement
       last: Point
     }
-  | { type: "pan"; last: Point }
+  | {
+      type: "pan"
+      last: Point
+      /** Finger spread and zoom when two fingers came down, for pinching. */
+      pinch: { distance: number; zoom: number } | undefined
+    }
 
 type SaveState = "saved" | "saving" | "failed"
 type ExportState = "idle" | "exporting" | "failed" | "share-ready"
@@ -72,6 +83,8 @@ const tools: readonly { tool: DrawingTool; label: string; icon: IconName }[] = [
 ]
 
 const saveDelayMs = 500
+const minZoom = Math.min(...ZOOM_LEVELS)
+const maxZoom = Math.max(...ZOOM_LEVELS)
 
 export function SheetEditor(props: { sheet: LoadedSheet }) {
   css`
@@ -197,7 +210,11 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
     }
 
     .pages[data-tool="scroll"] {
-      cursor: auto;
+      cursor: grab;
+    }
+
+    .pages[data-tool="scroll"]:active {
+      cursor: grabbing;
     }
 
     /* While drawing, the page must not scroll under the finger or pen. Two
@@ -249,12 +266,15 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
     window.matchMedia("(pointer: coarse)").matches ? "scroll" : "pen",
   )
   const [colors, setColors] = createSignal<Record<InkTool, string>>({
-    pen: INK_COLORS.pen[0].value,
-    highlighter: INK_COLORS.highlighter[0].value,
+    pen: readInkColorPreference("pen"),
+    highlighter: readInkColorPreference("highlighter"),
   })
   const [lineWidths, setLineWidths] = createSignal<
     Record<InkTool, LineWidthName>
-  >({ pen: "medium", highlighter: "medium" })
+  >({
+    pen: readLineWidthPreference("pen"),
+    highlighter: readLineWidthPreference("highlighter"),
+  })
   const [zoom, setZoom] = createSignal(1)
   const [fitWidth, setFitWidth] = createSignal(0)
   const [draft, setDraft] = createSignal<{
@@ -342,39 +362,63 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
     onCleanup(() => observer.disconnect())
   })
 
-  /** Zooms while keeping the middle of the viewport on the same spot. */
-  const changeZoom = (next: number) => {
+  /**
+   * Zooms while keeping the spot under `anchor` (in client coordinates, the
+   * middle of the viewport by default) where it is.
+   */
+  const changeZoom = (
+    next: number,
+    anchor: Point = {
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+    },
+  ) => {
+    const clamped = Math.min(maxZoom, Math.max(minZoom, next))
     if (!pagesElement || !scroller) {
-      setZoom(next)
+      setZoom(clamped)
       return
     }
 
     const before = pagesElement.getBoundingClientRect()
-    const centerY = window.innerHeight / 2
-    const centerX = scroller.clientWidth / 2
-    const anchorY = (centerY - before.top) / before.height
-    const anchorX = (scroller.scrollLeft + centerX) / pagesElement.scrollWidth
+    const scrollerLeft = scroller.getBoundingClientRect().left
+    const anchorY = (anchor.y - before.top) / before.height
+    const anchorX =
+      (scroller.scrollLeft + anchor.x - scrollerLeft) / pagesElement.scrollWidth
 
-    setZoom(next)
+    setZoom(clamped)
 
     const after = pagesElement.getBoundingClientRect()
-    window.scrollBy(0, after.top + anchorY * after.height - centerY)
-    scroller.scrollLeft = anchorX * pagesElement.scrollWidth - centerX
+    window.scrollBy(0, after.top + anchorY * after.height - anchor.y)
+    scroller.scrollLeft =
+      anchorX * pagesElement.scrollWidth - (anchor.x - scrollerLeft)
   }
 
-  const zoomIndex = () => ZOOM_LEVELS.indexOf(zoom())
-  const zoomIn = () => {
-    const next = ZOOM_LEVELS[zoomIndex() + 1]
-    if (next !== undefined) {
-      changeZoom(next)
+  const nextZoomLevel = () => ZOOM_LEVELS.find((level) => level > zoom() + 0.01)
+  const previousZoomLevel = () =>
+    ZOOM_LEVELS.findLast((level) => level < zoom() - 0.01)
+
+  onMount(() => {
+    if (!scroller) {
+      return
     }
-  }
-  const zoomOut = () => {
-    const next = ZOOM_LEVELS[zoomIndex() - 1]
-    if (next !== undefined) {
-      changeZoom(next)
+
+    // Trackpad pinches arrive as wheel events with the Ctrl key held, and so
+    // does Ctrl + mouse wheel.
+    const handleWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey) {
+        return
+      }
+
+      event.preventDefault()
+      const delta = Math.max(-40, Math.min(40, event.deltaY))
+      changeZoom(zoom() * Math.exp(-delta * 0.005), {
+        x: event.clientX,
+        y: event.clientY,
+      })
     }
-  }
+    scroller.addEventListener("wheel", handleWheel, { passive: false })
+    onCleanup(() => scroller?.removeEventListener("wheel", handleWheel))
+  })
 
   // --- Editing --------------------------------------------------------------
 
@@ -414,19 +458,23 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   // --- Pointer input --------------------------------------------------------
 
   let gesture: Gesture = { type: "none" }
-  const touches = new Map<number, Point>()
+  // Pointers that may scroll: fingers while drawing, and the mouse with the
+  // scroll tool. Touch scrolling with the scroll tool is left to the browser.
+  const panPointers = new Map<number, Point>()
   // Once a stylus has been used, fingers only scroll, so a resting palm
   // doesn't leave marks.
   let hasSeenPen = false
 
-  const touchCentroid = (): Point => {
-    let x = 0
-    let y = 0
-    for (const touch of touches.values()) {
-      x += touch.x
-      y += touch.y
+  const startPan = () => {
+    const pointers = [...panPointers.values()]
+    gesture = {
+      type: "pan",
+      last: centroid(pointers),
+      pinch:
+        pointers.length >= 2
+          ? { distance: distance(pointers[0], pointers[1]), zoom: zoom() }
+          : undefined,
     }
-    return { x: x / touches.size, y: y / touches.size }
   }
 
   const cancelGesture = () => {
@@ -472,6 +520,12 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   ) => {
     const currentTool = tool()
     if (currentTool === "scroll") {
+      if (event.pointerType === "mouse" && event.button === 0) {
+        event.preventDefault()
+        event.currentTarget.setPointerCapture(event.pointerId)
+        panPointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+        startPan()
+      }
       return
     }
 
@@ -480,13 +534,13 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
     }
 
     if (event.pointerType === "touch") {
-      touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
-      if (hasSeenPen || touches.size > 1) {
+      panPointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+      if (hasSeenPen || panPointers.size > 1) {
         // A second finger turns an accidental stroke into scrolling.
         if (gesture.type !== "pan") {
           cancelGesture()
         }
-        gesture = { type: "pan", last: touchCentroid() }
+        startPan()
         event.currentTarget.setPointerCapture(event.pointerId)
         return
       }
@@ -543,15 +597,25 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   const handlePointerMove: JSX.EventHandler<HTMLDivElement, PointerEvent> = (
     event,
   ) => {
-    if (touches.has(event.pointerId)) {
-      touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    if (panPointers.has(event.pointerId)) {
+      panPointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
       if (gesture.type === "pan") {
-        const centroid = touchCentroid()
-        window.scrollBy(0, gesture.last.y - centroid.y)
+        const pointers = [...panPointers.values()]
+        const center = centroid(pointers)
+        // Scroll first so the content follows the fingers, then zoom around
+        // where they are now.
+        window.scrollBy(0, gesture.last.y - center.y)
         if (scroller) {
-          scroller.scrollLeft += gesture.last.x - centroid.x
+          scroller.scrollLeft += gesture.last.x - center.x
         }
-        gesture = { type: "pan", last: centroid }
+        if (gesture.pinch && pointers.length >= 2) {
+          const spread = distance(pointers[0], pointers[1])
+          changeZoom(
+            (gesture.pinch.zoom * spread) / gesture.pinch.distance,
+            center,
+          )
+        }
+        gesture = { ...gesture, last: center }
         return
       }
     }
@@ -591,11 +655,12 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   }
 
   const handlePointerEnd = (event: PointerEvent, isCancelled: boolean) => {
-    if (touches.delete(event.pointerId) && gesture.type === "pan") {
-      gesture =
-        touches.size === 0
-          ? { type: "none" }
-          : { type: "pan", last: touchCentroid() }
+    if (panPointers.delete(event.pointerId) && gesture.type === "pan") {
+      if (panPointers.size === 0) {
+        gesture = { type: "none" }
+      } else {
+        startPan()
+      }
       return
     }
 
@@ -755,12 +820,13 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
                       aria-label={color.label}
                       title={color.label}
                       aria-pressed={colors()[currentTool()] === color.value}
-                      onClick={() =>
+                      onClick={() => {
                         setColors((current) => ({
                           ...current,
                           [currentTool()]: color.value,
                         }))
-                      }
+                        writeInkColorPreference(currentTool(), color.value)
+                      }}
                     />
                   )}
                 </For>
@@ -774,12 +840,13 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
                       aria-label={option.label}
                       title={option.label}
                       aria-pressed={lineWidths()[currentTool()] === option.name}
-                      onClick={() =>
+                      onClick={() => {
                         setLineWidths((current) => ({
                           ...current,
                           [currentTool()]: option.name,
                         }))
-                      }
+                        writeLineWidthPreference(currentTool(), option.name)
+                      }}
                     >
                       <span
                         class="width-dot"
@@ -839,8 +906,8 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
             class="tool-button"
             aria-label="Zoom out"
             title="Zoom out"
-            disabled={zoomIndex() <= 0}
-            onClick={zoomOut}
+            disabled={previousZoomLevel() === undefined}
+            onClick={() => changeZoom(previousZoomLevel() ?? zoom())}
           >
             <PhIcon
               name="magnifying-glass-minus"
@@ -862,8 +929,8 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
             class="tool-button"
             aria-label="Zoom in"
             title="Zoom in"
-            disabled={zoomIndex() >= ZOOM_LEVELS.length - 1}
-            onClick={zoomIn}
+            disabled={nextZoomLevel() === undefined}
+            onClick={() => changeZoom(nextZoomLevel() ?? zoom())}
           >
             <PhIcon name="magnifying-glass-plus" aria-hidden="true" size={22} />
           </button>
@@ -933,6 +1000,18 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
       </div>
     </section>
   )
+}
+
+function centroid(points: readonly Point[]): Point {
+  const sum = points.reduce(
+    (total, point) => ({ x: total.x + point.x, y: total.y + point.y }),
+    { x: 0, y: 0 },
+  )
+  return { x: sum.x / points.length, y: sum.y / points.length }
+}
+
+function distance(a: Point, b: Point): number {
+  return Math.max(1, Math.hypot(a.x - b.x, a.y - b.y))
 }
 
 function pagePoint(event: PointerEvent, page: HTMLElement): Point {

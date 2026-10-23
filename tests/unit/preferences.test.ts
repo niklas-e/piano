@@ -6,12 +6,16 @@ import {
   readBpmPreference,
   readExerciseTypeFilterPreference,
   readHandPreference,
+  readInkColorPreference,
   readLastExerciseIdPreference,
+  readLineWidthPreference,
   type StorageLike,
   writeBpmPreference,
   writeExerciseTypeFilterPreference,
   writeHandPreference,
+  writeInkColorPreference,
   writeLastExerciseIdPreference,
+  writeLineWidthPreference,
 } from "../../src/common/preferences.ts"
 
 test("BPM preference validates bounds", () => {
@@ -27,6 +31,34 @@ test("BPM preference validates bounds", () => {
 
   writeBpmPreference(MAX_BPM + 1, storage)
   assert.equal(readBpmPreference(storage), 80)
+})
+
+test("ink colours are remembered per tool and only from that tool's palette", () => {
+  const storage = memoryStorage()
+
+  assert.equal(readInkColorPreference("pen", storage), "#17130f")
+  assert.equal(readInkColorPreference("highlighter", storage), "#ffd400")
+
+  writeInkColorPreference("pen", "#c62f2f", storage)
+  writeInkColorPreference("highlighter", "#c62f2f", storage)
+  assert.equal(readInkColorPreference("pen", storage), "#c62f2f")
+  assert.equal(readInkColorPreference("highlighter", storage), "#ffd400")
+
+  storage.setItem("piano:ink-color:pen", "#123456")
+  assert.equal(readInkColorPreference("pen", storage), "#17130f")
+})
+
+test("line widths are remembered per tool", () => {
+  const storage = memoryStorage()
+
+  assert.equal(readLineWidthPreference("pen", storage), "medium")
+
+  writeLineWidthPreference("pen", "bold", storage)
+  assert.equal(readLineWidthPreference("pen", storage), "bold")
+  assert.equal(readLineWidthPreference("highlighter", storage), "medium")
+
+  storage.setItem("piano:line-width:pen", "huge")
+  assert.equal(readLineWidthPreference("pen", storage), "medium")
 })
 
 test("exercise filter and hand preferences reject invalid stored values", () => {

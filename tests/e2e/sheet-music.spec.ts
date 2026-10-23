@@ -106,6 +106,13 @@ test("drawings are kept on the page after reloading", async ({ page }) => {
   await expect(inkPaths(page, 0, "pen")).toHaveCount(1)
   await expect(inkPaths(page, 1, "highlighter")).toHaveCount(1)
   await expect(inkPaths(page, 2, "pen")).toHaveCount(0)
+
+  // The chosen colour is remembered too.
+  await page.getByRole("button", { name: "Highlighter" }).click()
+  await expect(page.getByRole("button", { name: "Pink" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  )
 })
 
 test("undo, redo, erase and clear all change the drawings", async ({
@@ -211,6 +218,39 @@ test("zooming resizes pages and drawings stay in place", async ({ page }) => {
   await expect(page.getByRole("button", { name: /^Zoom 100%/ })).toBeVisible()
 })
 
+test("Ctrl + wheel zooms and the scroll tool drags the page", async ({
+  page,
+}) => {
+  await page.goto("/sheet-music")
+  await addSheets(page, [await pdfFile()])
+  await page.getByRole("link", { name: "Etude in C" }).click()
+
+  const box = await page
+    .getByRole("figure", { name: "Page 1 of 3" })
+    .boundingBox()
+  if (!box) {
+    throw new Error("Page 1 is not visible")
+  }
+  await page.mouse.move(box.x + box.width / 2, box.y + 300)
+  await page.keyboard.down("Control")
+  await page.mouse.wheel(0, -40)
+  await page.keyboard.up("Control")
+  await expect(
+    page.getByRole("button", { name: /^Zoom 1[1-9]\d%/ }),
+  ).toBeVisible()
+
+  await page.getByRole("button", { name: "Scroll" }).click()
+  const scrollBefore = await page.evaluate(() => window.scrollY)
+  await page.mouse.move(box.x + box.width / 2, 700)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width / 2, 500, { steps: 5 })
+  await page.mouse.up()
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(scrollBefore + 150)
+  await expect(inkPaths(page, 0, "pen")).toHaveCount(0)
+})
+
 test("deleting a sheet removes it from the library", async ({ page }) => {
   await page.goto("/sheet-music")
   await addSheets(page, [await pdfFile()])
@@ -302,6 +342,22 @@ test.describe("on a touch screen", () => {
     await expect
       .poll(() => page.evaluate(() => window.scrollY))
       .toBeGreaterThan(scrollBefore + 150)
+    await expect(inkPaths(page, 0, "pen")).toHaveCount(1)
+
+    // Spreading two fingers apart zooms in.
+    const center = { x: box.x + box.width / 2, y: 600 }
+    await touch("touchStart", [
+      { x: center.x - 50, y: center.y, id: 1 },
+      { x: center.x + 50, y: center.y, id: 2 },
+    ])
+    for (let step = 1; step <= 5; step += 1) {
+      await touch("touchMove", [
+        { x: center.x - 50 - step * 10, y: center.y, id: 1 },
+        { x: center.x + 50 + step * 10, y: center.y, id: 2 },
+      ])
+    }
+    await touch("touchEnd", [])
+    await expect(page.getByRole("button", { name: /^Zoom 200%/ })).toBeVisible()
     await expect(inkPaths(page, 0, "pen")).toHaveCount(1)
   })
 })
