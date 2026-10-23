@@ -45,6 +45,7 @@ import {
   writeLineWidthPreference,
 } from "../common/preferences"
 import { downloadFile, exportAnnotatedSheet } from "../common/sheetExport"
+import { EditableTitle } from "./EditableTitle"
 import { sheetMusicLibrary } from "./library"
 import { SheetPage } from "./SheetPage"
 import type { LoadedSheet } from "./SheetViewerPage"
@@ -99,14 +100,6 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
       flex-wrap: wrap;
       gap: 0.25rem 1rem;
       justify-content: space-between;
-    }
-
-    .viewer-title {
-      font-size: clamp(1.25rem, 3vw, 1.75rem);
-      letter-spacing: -0.03em;
-      line-height: 1.15;
-      margin: 0;
-      overflow-wrap: anywhere;
     }
 
     .save-state {
@@ -284,6 +277,8 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   const [erased, setErased] = createSignal<ReadonlySet<Stroke>>(new Set())
   const [saveState, setSaveState] = createSignal<SaveState>("saved")
   const [exportState, setExportState] = createSignal<ExportState>("idle")
+  const [name, setName] = createSignal(sheet.record.name)
+  const [renameFailed, setRenameFailed] = createSignal(false)
 
   const inkTool = (): InkTool | undefined => {
     const current = tool()
@@ -437,6 +432,8 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
       if (
         !(event.ctrlKey || event.metaKey) ||
         event.altKey ||
+        // Text fields keep their own undo.
+        event.target instanceof HTMLInputElement ||
         (event.target instanceof HTMLElement && event.target.isContentEditable)
       ) {
         return
@@ -674,20 +671,34 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
 
   // --- Exporting ------------------------------------------------------------
 
-  let preparedExport: { pages: InkPages; file: File } | undefined
+  let preparedExport: { pages: InkPages; name: string; file: File } | undefined
 
   const prepareExport = async (): Promise<File> => {
     const pages = ink().present
-    if (preparedExport?.pages !== pages) {
+    const currentName = name()
+    if (
+      preparedExport?.pages !== pages ||
+      preparedExport.name !== currentName
+    ) {
       const file = await exportAnnotatedSheet(
-        sheet.record,
+        { ...sheet.record, name: currentName },
         sheet.file,
         pages,
         sheet.pdf,
       )
-      preparedExport = { pages, file }
+      preparedExport = { pages, name: currentName, file }
     }
     return preparedExport.file
+  }
+
+  const rename = (next: string) => {
+    const previous = name()
+    setName(next)
+    setRenameFailed(false)
+    sheetMusicLibrary.rename(sheet.record.id, next).catch(() => {
+      setName(previous)
+      setRenameFailed(true)
+    })
   }
 
   const download = async () => {
@@ -717,7 +728,7 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
     setExportState("exporting")
     try {
       const file = await prepareExport()
-      await navigator.share({ files: [file], title: sheet.record.name })
+      await navigator.share({ files: [file], title: name() })
       setExportState("idle")
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
@@ -736,6 +747,10 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   }
 
   const statusText = () => {
+    if (renameFailed()) {
+      return "Couldn’t rename"
+    }
+
     const currentExport = exportState()
     switch (currentExport) {
       case "exporting":
@@ -773,12 +788,12 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   return (
     <section class="sheet-editor" aria-labelledby="sheet-title">
       <div class="viewer-heading">
-        <h1 id="sheet-title" class="viewer-title">
-          {sheet.record.name}
-        </h1>
+        <EditableTitle id="sheet-title" title={name()} onRename={rename} />
         <p
           class={`save-state${
-            saveState() === "failed" || exportState() === "failed"
+            saveState() === "failed" ||
+            exportState() === "failed" ||
+            renameFailed()
               ? " failed"
               : ""
           }`}

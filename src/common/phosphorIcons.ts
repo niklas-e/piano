@@ -13,6 +13,7 @@ export const iconModuleLoaders = {
   hand: () => import("@phosphor-icons/webcomponents/PhHand"),
   pen: () => import("@phosphor-icons/webcomponents/PhPen"),
   highlighter: () => import("@phosphor-icons/webcomponents/PhHighlighter"),
+  "pencil-simple": () => import("@phosphor-icons/webcomponents/PhPencilSimple"),
   eraser: () => import("@phosphor-icons/webcomponents/PhEraser"),
   broom: () => import("@phosphor-icons/webcomponents/PhBroom"),
   "arrow-counter-clockwise": () =>

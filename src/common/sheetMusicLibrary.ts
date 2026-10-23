@@ -27,6 +27,7 @@ export type SheetMusicLibrary = {
   getInk(id: string): Promise<InkPages | undefined>
   add(sheet: NewSheet): Promise<SheetRecord>
   saveInk(id: string, pages: InkPages): Promise<void>
+  rename(id: string, name: string): Promise<void>
   remove(id: string): Promise<void>
 }
 
@@ -165,6 +166,20 @@ export function openSheetMusicLibrary(
           return undefined
         },
       )
+    },
+
+    async rename(id, name) {
+      await transact([stores.sheets], "readwrite", (transaction) => {
+        const sheets = transaction.objectStore(stores.sheets)
+        const request = sheets.get(id)
+        request.onsuccess = () => {
+          const record: unknown = request.result
+          if (isSheetRecord(record)) {
+            sheets.put({ ...record, name, updatedAt: now() })
+          }
+        }
+        return undefined
+      })
     },
 
     async remove(id) {

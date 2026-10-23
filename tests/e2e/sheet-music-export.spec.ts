@@ -177,8 +177,13 @@ test("images download at full size with the drawings", async ({ page }) => {
   await openSheet(page, "Photo")
   await drawRedLine(page, 0, [0.2, 0.5], [0.8, 0.5])
 
+  // Downloads are named after the current title.
+  await page.getByRole("button", { name: "Photo" }).click()
+  await page.getByRole("textbox", { name: "Title" }).fill("Scale study")
+  await page.keyboard.press("Enter")
+
   const file = await downloadWithDrawings(page)
-  expect(file.name).toBe("Photo (annotated).png")
+  expect(file.name).toBe("Scale study (annotated).png")
 
   const image = await page.evaluate(async (base64) => {
     const blob = await (await fetch(`data:image/png;base64,${base64}`)).blob()

@@ -88,6 +88,34 @@ test("saved ink survives reopening and moves the sheet to the top", async () => 
   assert.equal((await reopened.get(first.id))?.updatedAt, 3000)
 })
 
+test("renaming a sheet keeps its ink and moves it to the top", async () => {
+  const { library, advanceTime } = createLibrary()
+  const first = await library.add(sheet("Etude.pdf"))
+  const ink = addStroke(emptyInkPages(2), 0, stroke)
+  await library.saveInk(first.id, ink)
+  advanceTime()
+  await library.add(sheet("Nocturne.pdf"))
+  advanceTime()
+
+  await library.rename(first.id, "Etude in C")
+
+  assert.deepEqual(
+    (await library.list()).map((record) => record.name),
+    ["Etude in C", "Nocturne.pdf"],
+  )
+  assert.deepEqual(await library.getInk(first.id), ink)
+})
+
+test("renaming a deleted sheet does not bring it back", async () => {
+  const { library } = createLibrary()
+  const record = await library.add(sheet("Etude.pdf"))
+  await library.remove(record.id)
+
+  await library.rename(record.id, "Etude in C")
+
+  assert.deepEqual(await library.list(), [])
+})
+
 test("removing a sheet deletes its file and ink", async () => {
   const { library } = createLibrary()
   const record = await library.add(sheet("Etude.pdf"))

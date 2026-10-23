@@ -251,6 +251,66 @@ test("Ctrl + wheel zooms and the scroll tool drags the page", async ({
   await expect(inkPaths(page, 0, "pen")).toHaveCount(0)
 })
 
+test("the title can be renamed in place", async ({ page }) => {
+  await page.goto("/sheet-music")
+  await addSheets(page, [await pdfFile()])
+  await page.getByRole("link", { name: "Etude in C" }).click()
+
+  const heading = page.getByRole("heading", { level: 1 })
+  const titleField = page.getByRole("textbox", { name: "Title" })
+
+  // Enter keeps the new title, with the old one selected for replacing.
+  await heading.getByRole("button", { name: "Etude in C" }).click()
+  await expect(titleField).toBeFocused()
+  await page.keyboard.type("Clair de lune")
+  await page.keyboard.press("Enter")
+  await expect(heading).toHaveText("Clair de lune")
+  await expect(heading.getByRole("button")).toBeFocused()
+
+  // Escape and empty titles keep the current one.
+  await heading.getByRole("button").click()
+  await titleField.fill("Something else")
+  await page.keyboard.press("Escape")
+  await expect(heading).toHaveText("Clair de lune")
+  await heading.getByRole("button").click()
+  await titleField.fill("   ")
+  await page.keyboard.press("Enter")
+  await expect(heading).toHaveText("Clair de lune")
+
+  // Leaving the field keeps the edit too.
+  await heading.getByRole("button").click()
+  await titleField.fill("  Clair de lune, L. 32  ")
+  await page.getByRole("button", { name: "Pen" }).click()
+  await expect(heading).toHaveText("Clair de lune, L. 32")
+  await expect(page.getByRole("button", { name: "Pen" })).toBeFocused()
+
+  await page.reload()
+  await expect(heading).toHaveText("Clair de lune, L. 32")
+  await page.locator(".site-title").click()
+  await expect(
+    page.getByRole("link", { name: "Clair de lune, L. 32" }),
+  ).toBeVisible()
+})
+
+test("undo shortcuts in the title field don't undo drawings", async ({
+  page,
+}) => {
+  await page.goto("/sheet-music")
+  await addSheets(page, [await pdfFile("Etude in C.pdf", 1)])
+  await page.getByRole("link", { name: "Etude in C" }).click()
+  await page.getByRole("button", { name: "Pen" }).click()
+  await drawOnPage(page, 0, [
+    [0.2, 0.4],
+    [0.8, 0.4],
+  ])
+
+  await page.getByRole("button", { name: "Etude in C" }).click()
+  await page.keyboard.type("x")
+  await page.keyboard.press("ControlOrMeta+Z")
+
+  await expect(inkPaths(page, 0, "pen")).toHaveCount(1)
+})
+
 test("deleting a sheet removes it from the library", async ({ page }) => {
   await page.goto("/sheet-music")
   await addSheets(page, [await pdfFile()])
