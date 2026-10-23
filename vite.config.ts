@@ -3,6 +3,8 @@ import { VitePWA } from "vite-plugin-pwa"
 import solid from "vite-plugin-solid"
 import solidStyled from "vite-plugin-solid-styled"
 
+const themeColor = "#f7f0e6"
+
 export default defineConfig({
   plugins: [
     solid(),
@@ -14,41 +16,42 @@ export default defineConfig({
     }),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "logo.svg", "apple-touch-icon.png"],
       manifest: {
         name: "Piano Practice",
         short_name: "Piano",
-        description: "Practice piano exercises and sight reading",
-        theme_color: "#f7f0e6",
-        background_color: "#f7f0e6",
-        display: "standalone",
-        start_url: "/",
+        description: "Technical exercises and theory for piano practice.",
+        theme_color: themeColor,
+        background_color: themeColor,
         icons: [
           {
-            src: "/pwa-192x192.png",
+            src: "pwa-64x64.png",
+            sizes: "64x64",
+            type: "image/png",
+          },
+          {
+            src: "pwa-192x192.png",
             sizes: "192x192",
             type: "image/png",
-            purpose: "any",
           },
           {
-            src: "/pwa-512x512.png",
+            src: "pwa-512x512.png",
             sizes: "512x512",
             type: "image/png",
-            purpose: "any",
           },
           {
-            src: "/favicon.svg",
-            sizes: "any",
-            type: "image/svg+xml",
-            purpose: "any",
-          },
-          {
-            src: "/maskable-icon-512x512.png",
+            src: "maskable-icon-512x512.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable",
           },
         ],
+      },
+      // Precache the whole build, including public/ icons, so every route
+      // works offline after the first visit. The glob already covers the
+      // manifest icons, so don't let the plugin add them a second time.
+      includeManifestIcons: false,
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
       },
     }),
   ],

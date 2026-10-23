@@ -22,8 +22,8 @@
   "include": [
     "src",
     "tests",
-    "scripts",
     "playwright.config.ts",
+    "pwa-assets.config.ts",
     "vite.config.ts"
   ]
 }
