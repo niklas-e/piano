@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url"
 import { degrees, PDFDocument, rgb, StandardFonts } from "@cantoo/pdf-lib"
 import { expect, type Page } from "@playwright/test"
 import type { InkTool } from "../../src/common/ink.ts"
@@ -31,6 +32,19 @@ export async function createScorePdf(
 
   return Buffer.from(await pdf.save())
 }
+
+/**
+ * Encrypted copies of `createScorePdf`, like scores from publishers that
+ * restrict editing, made once with `PDFDocument.encrypt()`. The first opens
+ * without a password (the owner password is "publisher"); the second needs
+ * the user password "secret".
+ */
+export const encryptedScorePdfPath = fileURLToPath(
+  new URL("./encrypted-score.pdf", import.meta.url),
+)
+export const passwordProtectedScorePdfPath = fileURLToPath(
+  new URL("./password-protected-score.pdf", import.meta.url),
+)
 
 /** Paints a small PNG "photo" of a staff in the browser. */
 export async function createScorePng(
@@ -98,5 +112,33 @@ export async function drawOnPage(
 export function inkPaths(page: Page, pageIndex: number, layer: InkTool) {
   return page.locator(
     `[data-page-index="${pageIndex}"] [data-ink-layer="${layer}"] path`,
+  )
+}
+
+/** Reads the colour of the rendered page at a point given as page fractions. */
+export async function pagePixel(
+  page: Page,
+  pageIndex: number,
+  x: number,
+  y: number,
+): Promise<{ r: number; g: number; b: number }> {
+  const canvas = page.locator(`[data-page-index="${pageIndex}"] canvas`)
+  await expect(canvas).toBeVisible()
+
+  return canvas.evaluate(
+    (element: HTMLCanvasElement, point) => {
+      const context = element.getContext("2d")
+      if (!context) {
+        throw new Error("No 2D context")
+      }
+      const [r, g, b] = context.getImageData(
+        Math.round(point.x * element.width),
+        Math.round(point.y * element.height),
+        1,
+        1,
+      ).data
+      return { r, g, b }
+    },
+    { x, y },
   )
 }

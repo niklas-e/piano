@@ -27,6 +27,7 @@ import {
 } from "../common/ink"
 import { PhIcon } from "../common/PhIcon"
 import type { IconName } from "../common/phosphorIcons"
+import { downloadFile, exportAnnotatedSheet } from "../common/sheetExport"
 import {
   type DrawingTool,
   ERASER_RADIUS_PX,
@@ -61,6 +62,7 @@ type Gesture =
   | { type: "pan"; last: Point }
 
 type SaveState = "saved" | "saving" | "failed"
+type ExportState = "idle" | "exporting" | "failed" | "share-ready"
 
 const tools: readonly { tool: DrawingTool; label: string; icon: IconName }[] = [
   { tool: "scroll", label: "Scroll", icon: "hand" },
@@ -261,6 +263,7 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   }>()
   const [erased, setErased] = createSignal<ReadonlySet<Stroke>>(new Set())
   const [saveState, setSaveState] = createSignal<SaveState>("saved")
+  const [exportState, setExportState] = createSignal<ExportState>("idle")
 
   const inkTool = (): InkTool | undefined => {
     const current = tool()
@@ -604,6 +607,101 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
     }
   }
 
+  // --- Exporting ------------------------------------------------------------
+
+  let preparedExport: { pages: InkPages; file: File } | undefined
+
+  const prepareExport = async (): Promise<File> => {
+    const pages = ink().present
+    if (preparedExport?.pages !== pages) {
+      const file = await exportAnnotatedSheet(
+        sheet.record,
+        sheet.file,
+        pages,
+        sheet.pdf,
+      )
+      preparedExport = { pages, file }
+    }
+    return preparedExport.file
+  }
+
+  const download = async () => {
+    setExportState("exporting")
+    try {
+      downloadFile(await prepareExport())
+      setExportState("idle")
+    } catch {
+      setExportState("failed")
+    }
+  }
+
+  const canShareFiles = (() => {
+    try {
+      return (
+        typeof navigator.canShare === "function" &&
+        navigator.canShare({
+          files: [new File([], "sheet", { type: sheet.record.mimeType })],
+        })
+      )
+    } catch {
+      return false
+    }
+  })()
+
+  const share = async () => {
+    setExportState("exporting")
+    try {
+      const file = await prepareExport()
+      await navigator.share({ files: [file], title: sheet.record.name })
+      setExportState("idle")
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setExportState("idle")
+      } else if (
+        error instanceof DOMException &&
+        error.name === "NotAllowedError"
+      ) {
+        // Preparing a large file can outlast the tap that allowed sharing.
+        // The file is ready now, so the next tap shares straight away.
+        setExportState("share-ready")
+      } else {
+        setExportState("failed")
+      }
+    }
+  }
+
+  const statusText = () => {
+    const currentExport = exportState()
+    switch (currentExport) {
+      case "exporting":
+        return "Preparing file…"
+      case "failed":
+        return "Couldn’t prepare the file"
+      case "share-ready":
+        return "Ready, tap Share again"
+      case "idle":
+        break
+      default: {
+        const exhaustive: never = currentExport
+        throw new Error(`Unhandled export state: ${exhaustive}`)
+      }
+    }
+
+    const currentSave = saveState()
+    switch (currentSave) {
+      case "saving":
+        return "Saving…"
+      case "failed":
+        return "Couldn’t save drawings"
+      case "saved":
+        return strokeCount() > 0 ? "Saved" : ""
+      default: {
+        const exhaustive: never = currentSave
+        throw new Error(`Unhandled save state: ${exhaustive}`)
+      }
+    }
+  }
+
   // Switching tools mid-stroke would leave a half-drawn line behind.
   createEffect(on(tool, () => cancelGesture(), { defer: true }))
 
@@ -613,14 +711,16 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
         <h1 id="sheet-title" class="viewer-title">
           {sheet.record.name}
         </h1>
-        <p class={`save-state ${saveState()}`} role="status" aria-live="polite">
-          {saveState() === "saving"
-            ? "Saving…"
-            : saveState() === "failed"
-              ? "Couldn’t save drawings"
-              : strokeCount() > 0
-                ? "Saved"
-                : ""}
+        <p
+          class={`save-state${
+            saveState() === "failed" || exportState() === "failed"
+              ? " failed"
+              : ""
+          }`}
+          role="status"
+          aria-live="polite"
+        >
+          {statusText()}
         </p>
       </div>
 
@@ -767,6 +867,31 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
           >
             <PhIcon name="magnifying-glass-plus" aria-hidden="true" size={22} />
           </button>
+        </fieldset>
+
+        <fieldset class="tool-group" aria-label="File">
+          <button
+            type="button"
+            class="tool-button"
+            aria-label="Download with drawings"
+            title="Download with drawings"
+            disabled={exportState() === "exporting"}
+            onClick={() => void download()}
+          >
+            <PhIcon name="download-simple" aria-hidden="true" size={22} />
+          </button>
+          <Show when={canShareFiles}>
+            <button
+              type="button"
+              class="tool-button"
+              aria-label="Share with drawings"
+              title="Share with drawings"
+              disabled={exportState() === "exporting"}
+              onClick={() => void share()}
+            >
+              <PhIcon name="share-network" aria-hidden="true" size={22} />
+            </button>
+          </Show>
         </fieldset>
       </div>
 
