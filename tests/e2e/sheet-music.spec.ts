@@ -284,21 +284,9 @@ test("sheets open on the page that was read last", async ({ page }) => {
   await expect(
     page.getByRole("figure", { name: "Page 3 of 3" }),
   ).toBeInViewport()
-
-  // Pages turned in full screen count too.
-  await page.getByRole("button", { name: "Full screen" }).click()
-  await page.keyboard.press("ArrowLeft")
-  await expect(
-    page.getByRole("dialog").getByRole("figure", { name: "Page 2 of 3" }),
-  ).toBeVisible()
-  await page.goBack()
-  await page.getByRole("link", { name: "Etude in C" }).click()
   await expect(
     page.getByRole("combobox", { name: "Page" }).locator("option:checked"),
-  ).toHaveText("2 / 3")
-  await expect(
-    page.getByRole("figure", { name: "Page 2 of 3" }),
-  ).toBeInViewport()
+  ).toHaveText("3 / 3")
 })
 
 test("the title can be renamed in place", async ({ page }) => {

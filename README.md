@@ -40,7 +40,8 @@ PDFs get the ink written into their pages as vectors (encrypted PDFs are
 flattened into images instead), and images are saved at full size.
 
 Each sheet reopens on the page that was read last. Full screen shows whole
-pages for playing from, and keeps the screen awake.
+pages for playing from, two side by side on landscape screens, and keeps the
+screen awake.
 Pages turn with taps on either side, swipes, or the keyboard: arrow keys,
 Page Up/Down and Space, which is also what Bluetooth page turner pedals send.
 

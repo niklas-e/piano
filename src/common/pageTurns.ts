@@ -5,6 +5,9 @@ export type Size = { width: number; height: number }
 /** Pages that fill the screen together in full screen, left to right. */
 export type PageView = { pages: readonly number[] }
 
+/** One page at a time, or two side by side like an open book. */
+export type PageLayout = "single" | "spread"
+
 /** What a tap or swipe on the full screen pages asks for. */
 export type StageAction = "back" | "forward" | "toggle-controls" | "none"
 
@@ -15,9 +18,43 @@ const forwardZoneStart = 0.6
 /** Pointer movement up to this many CSS pixels still counts as a tap. */
 const maxTapDistancePx = 10
 const minSwipeDistancePx = 50
+/** Space between the pages of a spread, in CSS pixels. */
+export const SPREAD_GAP_PX = 8
+/**
+ * Two pages side by side are worth it when each is nearly as big as one page
+ * alone would be. Portrait pages on a landscape screen usually are.
+ */
+const minSpreadScale = 0.85
 
-export function pageViews(pageCount: number): PageView[] {
-  return Array.from({ length: pageCount }, (_, page) => ({ pages: [page] }))
+export function chooseLayout(
+  box: Size,
+  aspectRatio: number,
+  pageCount: number,
+): PageLayout {
+  if (pageCount < 2) {
+    return "single"
+  }
+
+  const single = fitPageWidth(pageBox(box, "single"), aspectRatio)
+  const spread = fitPageWidth(pageBox(box, "spread"), aspectRatio)
+  return spread >= single * minSpreadScale ? "spread" : "single"
+}
+
+/** The room each page has in a layout. */
+export function pageBox(box: Size, layout: PageLayout): Size {
+  return layout === "spread"
+    ? { width: (box.width - SPREAD_GAP_PX) / 2, height: box.height }
+    : box
+}
+
+export function pageViews(pageCount: number, layout: PageLayout): PageView[] {
+  const step = layout === "spread" ? 2 : 1
+  return Array.from({ length: Math.ceil(pageCount / step) }, (_, index) => ({
+    pages: Array.from(
+      { length: Math.min(step, pageCount - index * step) },
+      (_, offset) => index * step + offset,
+    ),
+  }))
 }
 
 /** The view that shows `page`, or the nearest one if the page is gone. */

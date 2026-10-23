@@ -1,5 +1,6 @@
 import {
   createEffect,
+  createMemo,
   createSignal,
   Index,
   type JSX,
@@ -12,9 +13,12 @@ import { css } from "solid-styled"
 import type { InkPages, Point, Stroke } from "../common/ink"
 import { PhIcon } from "../common/PhIcon"
 import {
+  chooseLayout,
   fitPageWidth,
+  pageBox,
   pageViews,
   type Size,
+  SPREAD_GAP_PX,
   stageAction,
   viewIndexForPage,
   viewLabel,
@@ -137,29 +141,34 @@ export function FullScreenView(props: {
     }
   `
 
-  const views = pageViews(props.pages.length)
-  const [viewIndex, setViewIndex] = createSignal(
-    viewIndexForPage(views, props.startPage),
-  )
+  // The page being read is kept rather than the view, so turning the screen
+  // between one and two pages at a time stays on it.
+  const [page, setPage] = createSignal(props.startPage)
   const [stage, setStage] = createSignal<Size>({ width: 0, height: 0 })
   const [controlsShown, setControlsShown] = createSignal(true)
 
-  const view = () => views[viewIndex()]
-  const page = () => view().pages[0]
+  // Scores rarely mix page sizes, so the first page decides for all.
+  const layout = createMemo(() =>
+    chooseLayout(stage(), props.pages[0].aspectRatio, props.pages.length),
+  )
+  const views = createMemo(() => pageViews(props.pages.length, layout()))
+  const viewIndex = createMemo(() => viewIndexForPage(views(), page()))
+  const view = () => views()[viewIndex()]
   const isVisible = (page: number) => view().pages.includes(page)
   // The views either side are rendered too, so turning to them is instant.
   const isActive = (page: number) =>
-    views
+    views()
       .slice(Math.max(0, viewIndex() - 1), viewIndex() + 2)
       .some((nearby) => nearby.pages.includes(page))
 
   let dialog: HTMLDialogElement | undefined
   let stageElement: HTMLDivElement | undefined
 
-  const turn = (step: 1 | -1) =>
-    setViewIndex((index) =>
-      Math.min(views.length - 1, Math.max(0, index + step)),
-    )
+  const showView = (index: number) => {
+    const all = views()
+    setPage(all[Math.min(all.length - 1, Math.max(0, index))].pages[0])
+  }
+  const turn = (step: 1 | -1) => showView(viewIndex() + step)
   const turnFromMusic = (step: 1 | -1) => {
     setControlsShown(false)
     turn(step)
@@ -230,10 +239,10 @@ export function FullScreenView(props: {
       turnFromMusic(-1)
     } else if (event.key === "Home") {
       event.preventDefault()
-      setViewIndex(0)
+      showView(0)
     } else if (event.key === "End") {
       event.preventDefault()
-      setViewIndex(views.length - 1)
+      showView(views().length - 1)
     }
   }
 
@@ -312,6 +321,7 @@ export function FullScreenView(props: {
       <div
         ref={stageElement}
         class="stage"
+        style={{ gap: `${SPREAD_GAP_PX}px` }}
         tabIndex={-1}
         autofocus
         onPointerDown={handlePointerDown}
@@ -327,7 +337,10 @@ export function FullScreenView(props: {
                   index={index}
                   pageCount={props.pages.length}
                   source={source()}
-                  width={fitPageWidth(stage(), source().aspectRatio)}
+                  width={fitPageWidth(
+                    pageBox(stage(), layout()),
+                    source().aspectRatio,
+                  )}
                   strokes={props.ink[index]}
                   draft={undefined}
                   hidden={noStrokes}
@@ -369,7 +382,7 @@ export function FullScreenView(props: {
             class="control"
             aria-label="Next page"
             title="Next page"
-            disabled={viewIndex() === views.length - 1}
+            disabled={viewIndex() === views().length - 1}
             onClick={() => turn(1)}
           >
             <PhIcon name="caret-right" aria-hidden="true" size={22} />

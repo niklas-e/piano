@@ -1,7 +1,9 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 import {
+  chooseLayout,
   fitPageWidth,
+  pageBox,
   pageViews,
   stageAction,
   viewIndexForPage,
@@ -17,19 +19,51 @@ test("a whole page fits the screen, limited by whichever side is tighter", () =>
   assert.equal(fitPageWidth({ width: 1280, height: 800 }, a4), 565)
 })
 
-test("every page gets a view of its own", () => {
-  assert.deepEqual(pageViews(3), [
+test("portrait pages are shown in pairs on landscape screens only", () => {
+  const portraitTablet = { width: 820, height: 1180 }
+  const landscapeTablet = { width: 1180, height: 820 }
+  const laptop = { width: 1440, height: 900 }
+
+  assert.equal(chooseLayout(portraitTablet, a4, 8), "single")
+  assert.equal(chooseLayout(landscapeTablet, a4, 8), "spread")
+  assert.equal(chooseLayout(laptop, a4, 8), "spread")
+  // A single page has nothing to pair with.
+  assert.equal(chooseLayout(laptop, a4, 1), "single")
+  // Landscape pages would shrink to half their size.
+  assert.equal(chooseLayout(laptop, 0.7, 8), "single")
+})
+
+test("pages in a spread share the width, with a gap between them", () => {
+  assert.deepEqual(pageBox({ width: 1208, height: 800 }, "spread"), {
+    width: 600,
+    height: 800,
+  })
+  assert.deepEqual(pageBox({ width: 1208, height: 800 }, "single"), {
+    width: 1208,
+    height: 800,
+  })
+})
+
+test("every page gets a view of its own, or shares one in pairs", () => {
+  assert.deepEqual(pageViews(3, "single"), [
     { pages: [0] },
     { pages: [1] },
     { pages: [2] },
   ])
+  assert.deepEqual(pageViews(5, "spread"), [
+    { pages: [0, 1] },
+    { pages: [2, 3] },
+    { pages: [4] },
+  ])
 })
 
-test("a remembered page past the end opens the last view", () => {
-  const views = pageViews(3)
+test("a page opens the view that shows it", () => {
+  const spreads = pageViews(5, "spread")
 
-  assert.equal(viewIndexForPage(views, 1), 1)
-  assert.equal(viewIndexForPage(views, 7), 2)
+  assert.equal(viewIndexForPage(spreads, 3), 1)
+  assert.equal(viewIndexForPage(spreads, 4), 2)
+  // A remembered page past the end opens the last view.
+  assert.equal(viewIndexForPage(pageViews(3, "single"), 7), 2)
 })
 
 test("view labels count pages from one", () => {

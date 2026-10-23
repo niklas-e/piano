@@ -1,6 +1,9 @@
 import { expect, type Page, test } from "@playwright/test"
 import { addSheets, createScorePdf } from "../fixtures/sheets"
 
+// Upright, like a tablet on a music stand, so pages show one at a time.
+test.use({ viewport: { width: 1024, height: 1280 } })
+
 async function openSheet(page: Page, pageCount = 3) {
   await page.goto("/sheet-music")
   await addSheets(page, [
@@ -24,18 +27,21 @@ async function expectWholePage(page: Page, name: string) {
   await expect(sheetPage).toHaveAccessibleName(name)
   await expect(sheetPage.locator("canvas")).toBeVisible()
 
-  const box = await sheetPage.boundingBox()
-  const viewport = page.viewportSize()
-  if (!box || !viewport) {
-    throw new Error("Missing boxes")
-  }
-  expect(box.y).toBeGreaterThanOrEqual(0)
-  expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1)
-  expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1)
-  // As big as fits: as tall or as wide as the window.
-  expect(
-    Math.max(box.height / viewport.height, box.width / viewport.width),
-  ).toBeGreaterThan(0.99)
+  // Retried, since turning the screen resizes the page a moment later.
+  await expect(async () => {
+    const box = await sheetPage.boundingBox()
+    const viewport = page.viewportSize()
+    if (!box || !viewport) {
+      throw new Error("Missing boxes")
+    }
+    expect(box.y).toBeGreaterThanOrEqual(0)
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1)
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1)
+    // As big as fits: as tall or as wide as the window.
+    expect(
+      Math.max(box.height / viewport.height, box.width / viewport.width),
+    ).toBeGreaterThan(0.99)
+  }).toPass()
 }
 
 test("full screen shows whole pages that the keyboard turns", async ({
@@ -114,6 +120,24 @@ test("the controls show the page and turn and close it", async ({ page }) => {
   ).toBeInViewport()
 })
 
+test("pages turned in full screen are where the sheet reopens", async ({
+  page,
+}) => {
+  await openSheet(page)
+  await page.getByRole("button", { name: "Full screen" }).click()
+  await page.keyboard.press("End")
+  await expectWholePage(page, "Page 3 of 3")
+
+  await page.goBack()
+  await page.getByRole("link", { name: "Etude in C" }).click()
+  await expect(
+    page.getByRole("combobox", { name: "Page" }).locator("option:checked"),
+  ).toHaveText("3 / 3")
+  await expect(
+    page.getByRole("figure", { name: "Page 3 of 3" }),
+  ).toBeInViewport()
+})
+
 test("full screen keeps the screen awake until it closes", async ({ page }) => {
   await page.addInitScript(() => {
     const log: string[] = []
@@ -145,6 +169,57 @@ test("full screen keeps the screen awake until it closes", async ({ page }) => {
   await page.keyboard.press("Escape")
   await expect(fullScreen(page)).toBeHidden()
   await expect.poll(wakeLockLog).toEqual(["request", "release"])
+})
+
+test.describe("on a landscape screen", () => {
+  test.use({ viewport: { width: 1366, height: 1024 } })
+
+  test("pages are shown in pairs, and singly once turned upright", async ({
+    page,
+  }) => {
+    // Like an iPhone, which only lets videos go full screen. The test
+    // browser can't resize a full screen window either.
+    await page.addInitScript(() =>
+      Object.defineProperty(Document.prototype, "fullscreenEnabled", {
+        get: () => false,
+      }),
+    )
+    await openSheet(page)
+    await page.getByRole("button", { name: "Full screen" }).click()
+
+    const dialog = fullScreen(page)
+    const pages = dialog.getByRole("figure")
+    await expect(pages).toHaveCount(2)
+    await expect(pages.first()).toHaveAccessibleName("Page 1 of 3")
+    await expect(pages.last()).toHaveAccessibleName("Page 2 of 3")
+    await expect(dialog.getByText("1–2 / 3")).toBeAttached()
+    const [left, right] = await Promise.all([
+      pages.first().boundingBox(),
+      pages.last().boundingBox(),
+    ])
+    if (!left || !right) {
+      throw new Error("Missing boxes")
+    }
+    expect(left.x + left.width).toBeLessThan(right.x)
+    // Together they're as wide as the screen.
+    expect(left.width + right.width).toBeGreaterThan(1366 - 16)
+
+    // The odd page out keeps the size of the pair.
+    await page.keyboard.press("ArrowRight")
+    await expect(pages).toHaveCount(1)
+    await expect(pages).toHaveAccessibleName("Page 3 of 3")
+    await expect(dialog.getByText("3 / 3")).toBeAttached()
+    expect((await pages.boundingBox())?.width).toBeCloseTo(left.width, 0)
+
+    // Turning the screen keeps the page, then turns one page at a time.
+    await page.setViewportSize({ width: 1024, height: 1366 })
+    await expectWholePage(page, "Page 3 of 3")
+    await page.keyboard.press("ArrowLeft")
+    await expectWholePage(page, "Page 2 of 3")
+    await page.setViewportSize({ width: 1366, height: 1024 })
+    await expect(pages).toHaveCount(2)
+    await expect(dialog.getByText("1–2 / 3")).toBeAttached()
+  })
 })
 
 test.describe("on a touch screen", () => {
