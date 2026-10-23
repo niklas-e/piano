@@ -23,6 +23,7 @@
     "src",
     "tests",
     "playwright.config.ts",
+    "playwright.offline.config.ts",
     "pwa-assets.config.ts",
     "vite.config.ts"
   ]

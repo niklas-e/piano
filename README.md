@@ -59,6 +59,13 @@ Run Playwright tests:
 pnpm test:e2e
 ```
 
+Run offline Playwright tests against a production build with the service
+worker enabled:
+
+```bash
+pnpm test:offline
+```
+
 Run all tests:
 
 ```bash

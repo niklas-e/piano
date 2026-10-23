@@ -11,10 +11,11 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "biome check --write",
-    "test": "pnpm test:unit && pnpm test:e2e",
+    "test": "pnpm test:unit && pnpm test:e2e && pnpm test:offline",
     "test:e2e": "playwright test",
     "test:unit": "node --test tests/unit/*.test.ts",
-    "generate-pwa-assets": "pwa-assets-generator"
+    "generate-pwa-assets": "pwa-assets-generator",
+    "test:offline": "playwright test --config playwright.offline.config.ts"
   },
   "dependencies": {
     "@phosphor-icons/webcomponents": "2.1.5",
