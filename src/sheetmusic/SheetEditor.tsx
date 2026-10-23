@@ -44,8 +44,10 @@ import {
   writeInkColorPreference,
   writeLineWidthPreference,
 } from "../common/preferences"
+import { exitFullscreen, requestFullscreen } from "../common/screen"
 import { downloadFile, exportAnnotatedSheet } from "../common/sheetExport"
 import { EditableTitle } from "./EditableTitle"
+import { FullScreenView } from "./FullScreenView"
 import { sheetMusicLibrary } from "./library"
 import { SheetPage } from "./SheetPage"
 import type { LoadedSheet } from "./SheetViewerPage"
@@ -92,6 +94,11 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
     .sheet-editor {
       display: grid;
       gap: 0.75rem;
+    }
+
+    /* Hidden while in full screen, which also frees its rendered pages. */
+    .sheet-editor[hidden] {
+      display: none;
     }
 
     .viewer-heading {
@@ -279,6 +286,10 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   const [exportState, setExportState] = createSignal<ExportState>("idle")
   const [name, setName] = createSignal(sheet.record.name)
   const [renameFailed, setRenameFailed] = createSignal(false)
+  const [fullScreen, setFullScreen] = createSignal<{
+    startPage: number
+    scroll: Point
+  }>()
 
   const inkTool = (): InkTool | undefined => {
     const current = tool()
@@ -287,6 +298,7 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   const pageWidth = () => Math.floor(fitWidth() * zoom())
   const strokeCount = () => inkStrokeCount(ink().present)
 
+  let toolbar: HTMLDivElement | undefined
   let scroller: HTMLDivElement | undefined
   let pagesElement: HTMLDivElement | undefined
 
@@ -349,8 +361,12 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
     }
 
     const target = scroller
-    const updateFitWidth = () =>
-      setFitWidth(Math.min(target.clientWidth, MAX_FIT_WIDTH_PX))
+    const updateFitWidth = () => {
+      // Keep the layout while hidden, so scroll positions still fit after.
+      if (target.clientWidth > 0) {
+        setFitWidth(Math.min(target.clientWidth, MAX_FIT_WIDTH_PX))
+      }
+    }
     updateFitWidth()
     const observer = new ResizeObserver(updateFitWidth)
     observer.observe(target)
@@ -414,6 +430,48 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
     scroller.addEventListener("wheel", handleWheel, { passive: false })
     onCleanup(() => scroller?.removeEventListener("wheel", handleWheel))
   })
+
+  const pageElements = () =>
+    pagesElement?.querySelectorAll<HTMLElement>("[data-page-index]") ?? []
+
+  /** The page being read: the one a third of the way down the visible area. */
+  const pageInView = (): number => {
+    const top = toolbar?.getBoundingClientRect().bottom ?? 0
+    const readingLine = top + (window.innerHeight - top) / 3
+    const pages = [...pageElements()]
+    const index = pages.findIndex(
+      (page) => page.getBoundingClientRect().bottom > readingLine,
+    )
+    return index === -1 ? pages.length - 1 : index
+  }
+
+  const enterFullScreen = () => {
+    // Asked for straight away, while the tap still allows it.
+    requestFullscreen()
+    setFullScreen({
+      startPage: pageInView(),
+      scroll: { x: scroller?.scrollLeft ?? 0, y: window.scrollY },
+    })
+  }
+
+  const exitFullScreen = (page: number) => {
+    const entered = fullScreen()
+    setFullScreen(undefined)
+    const restoreScroll = () => {
+      if (entered?.startPage === page) {
+        window.scrollTo(0, entered.scroll.y)
+        if (scroller) {
+          scroller.scrollLeft = entered.scroll.x
+        }
+      } else {
+        pageElements()[page]?.scrollIntoView({ block: "start" })
+      }
+    }
+    restoreScroll()
+    // Browsers put back the scroll position they had when entering full
+    // screen, which was while the pages were hidden.
+    void exitFullscreen().then(restoreScroll)
+  }
 
   // --- Editing --------------------------------------------------------------
 
@@ -786,234 +844,275 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   createEffect(on(tool, () => cancelGesture(), { defer: true }))
 
   return (
-    <section class="sheet-editor" aria-labelledby="sheet-title">
-      <div class="viewer-heading">
-        <EditableTitle id="sheet-title" title={name()} onRename={rename} />
-        <p
-          class={`save-state${
-            saveState() === "failed" ||
-            exportState() === "failed" ||
-            renameFailed()
-              ? " failed"
-              : ""
-          }`}
-          role="status"
-          aria-live="polite"
+    <>
+      <section
+        class="sheet-editor"
+        aria-labelledby="sheet-title"
+        hidden={fullScreen() !== undefined}
+      >
+        <div class="viewer-heading">
+          <EditableTitle id="sheet-title" title={name()} onRename={rename} />
+          <p
+            class={`save-state${
+              saveState() === "failed" ||
+              exportState() === "failed" ||
+              renameFailed()
+                ? " failed"
+                : ""
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            {statusText()}
+          </p>
+        </div>
+
+        <div
+          ref={toolbar}
+          class="toolbar"
+          role="toolbar"
+          aria-label="Drawing tools"
         >
-          {statusText()}
-        </p>
-      </div>
+          <fieldset class="tool-group tools" aria-label="Tool">
+            <For each={tools}>
+              {(item) => (
+                <button
+                  type="button"
+                  class="tool-button"
+                  aria-label={item.label}
+                  title={item.label}
+                  aria-pressed={tool() === item.tool}
+                  onClick={() => setTool(item.tool)}
+                >
+                  <PhIcon name={item.icon} aria-hidden="true" size={22} />
+                </button>
+              )}
+            </For>
+          </fieldset>
 
-      <div class="toolbar" role="toolbar" aria-label="Drawing tools">
-        <fieldset class="tool-group tools" aria-label="Tool">
-          <For each={tools}>
-            {(item) => (
-              <button
-                type="button"
-                class="tool-button"
-                aria-label={item.label}
-                title={item.label}
-                aria-pressed={tool() === item.tool}
-                onClick={() => setTool(item.tool)}
-              >
-                <PhIcon name={item.icon} aria-hidden="true" size={22} />
-              </button>
-            )}
-          </For>
-        </fieldset>
-
-        <Show when={inkTool()}>
-          {(currentTool) => (
-            <>
-              <fieldset class="tool-group" aria-label="Color">
-                <For each={INK_COLORS[currentTool()]}>
-                  {(color) => (
-                    <button
-                      type="button"
-                      class="swatch"
-                      style={{ "--swatch": color.value }}
-                      aria-label={color.label}
-                      title={color.label}
-                      aria-pressed={colors()[currentTool()] === color.value}
-                      onClick={() => {
-                        setColors((current) => ({
-                          ...current,
-                          [currentTool()]: color.value,
-                        }))
-                        writeInkColorPreference(currentTool(), color.value)
-                      }}
-                    />
-                  )}
-                </For>
-              </fieldset>
-              <fieldset class="tool-group" aria-label="Line width">
-                <For each={LINE_WIDTH_OPTIONS}>
-                  {(option) => (
-                    <button
-                      type="button"
-                      class="tool-button"
-                      aria-label={option.label}
-                      title={option.label}
-                      aria-pressed={lineWidths()[currentTool()] === option.name}
-                      onClick={() => {
-                        setLineWidths((current) => ({
-                          ...current,
-                          [currentTool()]: option.name,
-                        }))
-                        writeLineWidthPreference(currentTool(), option.name)
-                      }}
-                    >
-                      <span
-                        class="width-dot"
-                        style={{
-                          width: `${option.dotSize}px`,
-                          height: `${option.dotSize}px`,
+          <Show when={inkTool()}>
+            {(currentTool) => (
+              <>
+                <fieldset class="tool-group" aria-label="Color">
+                  <For each={INK_COLORS[currentTool()]}>
+                    {(color) => (
+                      <button
+                        type="button"
+                        class="swatch"
+                        style={{ "--swatch": color.value }}
+                        aria-label={color.label}
+                        title={color.label}
+                        aria-pressed={colors()[currentTool()] === color.value}
+                        onClick={() => {
+                          setColors((current) => ({
+                            ...current,
+                            [currentTool()]: color.value,
+                          }))
+                          writeInkColorPreference(currentTool(), color.value)
                         }}
                       />
-                    </button>
-                  )}
-                </For>
-              </fieldset>
-            </>
-          )}
-        </Show>
+                    )}
+                  </For>
+                </fieldset>
+                <fieldset class="tool-group" aria-label="Line width">
+                  <For each={LINE_WIDTH_OPTIONS}>
+                    {(option) => (
+                      <button
+                        type="button"
+                        class="tool-button"
+                        aria-label={option.label}
+                        title={option.label}
+                        aria-pressed={
+                          lineWidths()[currentTool()] === option.name
+                        }
+                        onClick={() => {
+                          setLineWidths((current) => ({
+                            ...current,
+                            [currentTool()]: option.name,
+                          }))
+                          writeLineWidthPreference(currentTool(), option.name)
+                        }}
+                      >
+                        <span
+                          class="width-dot"
+                          style={{
+                            width: `${option.dotSize}px`,
+                            height: `${option.dotSize}px`,
+                          }}
+                        />
+                      </button>
+                    )}
+                  </For>
+                </fieldset>
+              </>
+            )}
+          </Show>
 
-        <fieldset class="tool-group history" aria-label="History">
-          <button
-            type="button"
-            class="tool-button"
-            aria-label="Undo"
-            title="Undo"
-            disabled={ink().past.length === 0}
-            onClick={undo}
-          >
-            <PhIcon
-              name="arrow-counter-clockwise"
-              aria-hidden="true"
-              size={22}
-            />
-          </button>
-          <button
-            type="button"
-            class="tool-button"
-            aria-label="Redo"
-            title="Redo"
-            disabled={ink().future.length === 0}
-            onClick={redo}
-          >
-            <PhIcon name="arrow-clockwise" aria-hidden="true" size={22} />
-          </button>
-          <button
-            type="button"
-            class="tool-button"
-            aria-label="Clear all drawings"
-            title="Clear all drawings"
-            disabled={strokeCount() === 0}
-            onClick={clearAll}
-          >
-            <PhIcon name="broom" aria-hidden="true" size={22} />
-          </button>
-        </fieldset>
-
-        <fieldset class="tool-group" aria-label="Zoom">
-          <button
-            type="button"
-            class="tool-button"
-            aria-label="Zoom out"
-            title="Zoom out"
-            disabled={previousZoomLevel() === undefined}
-            onClick={() => changeZoom(previousZoomLevel() ?? zoom())}
-          >
-            <PhIcon
-              name="magnifying-glass-minus"
-              aria-hidden="true"
-              size={22}
-            />
-          </button>
-          <button
-            type="button"
-            class="tool-button zoom-level"
-            aria-label={`Zoom ${Math.round(zoom() * 100)}%, reset to fit width`}
-            title="Fit width"
-            onClick={() => changeZoom(1)}
-          >
-            {Math.round(zoom() * 100)}%
-          </button>
-          <button
-            type="button"
-            class="tool-button"
-            aria-label="Zoom in"
-            title="Zoom in"
-            disabled={nextZoomLevel() === undefined}
-            onClick={() => changeZoom(nextZoomLevel() ?? zoom())}
-          >
-            <PhIcon name="magnifying-glass-plus" aria-hidden="true" size={22} />
-          </button>
-        </fieldset>
-
-        <fieldset class="tool-group" aria-label="File">
-          <button
-            type="button"
-            class="tool-button"
-            aria-label="Download with drawings"
-            title="Download with drawings"
-            disabled={exportState() === "exporting"}
-            onClick={() => void download()}
-          >
-            <PhIcon name="download-simple" aria-hidden="true" size={22} />
-          </button>
-          <Show when={canShareFiles}>
+          <fieldset class="tool-group history" aria-label="History">
             <button
               type="button"
               class="tool-button"
-              aria-label="Share with drawings"
-              title="Share with drawings"
-              disabled={exportState() === "exporting"}
-              onClick={() => void share()}
+              aria-label="Undo"
+              title="Undo"
+              disabled={ink().past.length === 0}
+              onClick={undo}
             >
-              <PhIcon name="share-network" aria-hidden="true" size={22} />
+              <PhIcon
+                name="arrow-counter-clockwise"
+                aria-hidden="true"
+                size={22}
+              />
             </button>
-          </Show>
-        </fieldset>
-      </div>
+            <button
+              type="button"
+              class="tool-button"
+              aria-label="Redo"
+              title="Redo"
+              disabled={ink().future.length === 0}
+              onClick={redo}
+            >
+              <PhIcon name="arrow-clockwise" aria-hidden="true" size={22} />
+            </button>
+            <button
+              type="button"
+              class="tool-button"
+              aria-label="Clear all drawings"
+              title="Clear all drawings"
+              disabled={strokeCount() === 0}
+              onClick={clearAll}
+            >
+              <PhIcon name="broom" aria-hidden="true" size={22} />
+            </button>
+          </fieldset>
 
-      <div ref={scroller} class="pages-scroll">
-        {/* biome-ignore lint/a11y/noStaticElementInteractions: Drawing is a pointer-only activity; the toolbar and the pages stay usable without it. */}
-        <div
-          ref={pagesElement}
-          class="pages"
-          data-tool={tool()}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={(event) => handlePointerEnd(event, false)}
-          onPointerCancel={(event) => handlePointerEnd(event, true)}
-          onLostPointerCapture={(event) => handlePointerEnd(event, true)}
-          onContextMenu={(event) => {
-            if (tool() !== "scroll") {
-              event.preventDefault()
-            }
-          }}
-        >
-          <Show when={fitWidth() > 0}>
-            <Index each={sheet.pages}>
-              {(source, index) => (
-                <SheetPage
-                  index={index}
-                  pageCount={sheet.pages.length}
-                  source={source()}
-                  width={pageWidth()}
-                  strokes={ink().present[index]}
-                  draft={
-                    draft()?.pageIndex === index ? draft()?.stroke : undefined
-                  }
-                  hidden={erased()}
-                />
-              )}
-            </Index>
-          </Show>
+          <fieldset class="tool-group" aria-label="Zoom">
+            <button
+              type="button"
+              class="tool-button"
+              aria-label="Zoom out"
+              title="Zoom out"
+              disabled={previousZoomLevel() === undefined}
+              onClick={() => changeZoom(previousZoomLevel() ?? zoom())}
+            >
+              <PhIcon
+                name="magnifying-glass-minus"
+                aria-hidden="true"
+                size={22}
+              />
+            </button>
+            <button
+              type="button"
+              class="tool-button zoom-level"
+              aria-label={`Zoom ${Math.round(zoom() * 100)}%, reset to fit width`}
+              title="Fit width"
+              onClick={() => changeZoom(1)}
+            >
+              {Math.round(zoom() * 100)}%
+            </button>
+            <button
+              type="button"
+              class="tool-button"
+              aria-label="Zoom in"
+              title="Zoom in"
+              disabled={nextZoomLevel() === undefined}
+              onClick={() => changeZoom(nextZoomLevel() ?? zoom())}
+            >
+              <PhIcon
+                name="magnifying-glass-plus"
+                aria-hidden="true"
+                size={22}
+              />
+            </button>
+          </fieldset>
+
+          <fieldset class="tool-group" aria-label="View">
+            <button
+              type="button"
+              class="tool-button"
+              aria-label="Full screen"
+              title="Full screen"
+              onClick={enterFullScreen}
+            >
+              <PhIcon name="corners-out" aria-hidden="true" size={22} />
+            </button>
+          </fieldset>
+
+          <fieldset class="tool-group" aria-label="File">
+            <button
+              type="button"
+              class="tool-button"
+              aria-label="Download with drawings"
+              title="Download with drawings"
+              disabled={exportState() === "exporting"}
+              onClick={() => void download()}
+            >
+              <PhIcon name="download-simple" aria-hidden="true" size={22} />
+            </button>
+            <Show when={canShareFiles}>
+              <button
+                type="button"
+                class="tool-button"
+                aria-label="Share with drawings"
+                title="Share with drawings"
+                disabled={exportState() === "exporting"}
+                onClick={() => void share()}
+              >
+                <PhIcon name="share-network" aria-hidden="true" size={22} />
+              </button>
+            </Show>
+          </fieldset>
         </div>
-      </div>
-    </section>
+
+        <div ref={scroller} class="pages-scroll">
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: Drawing is a pointer-only activity; the toolbar and the pages stay usable without it. */}
+          <div
+            ref={pagesElement}
+            class="pages"
+            data-tool={tool()}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={(event) => handlePointerEnd(event, false)}
+            onPointerCancel={(event) => handlePointerEnd(event, true)}
+            onLostPointerCapture={(event) => handlePointerEnd(event, true)}
+            onContextMenu={(event) => {
+              if (tool() !== "scroll") {
+                event.preventDefault()
+              }
+            }}
+          >
+            <Show when={fitWidth() > 0}>
+              <Index each={sheet.pages}>
+                {(source, index) => (
+                  <SheetPage
+                    index={index}
+                    pageCount={sheet.pages.length}
+                    source={source()}
+                    width={pageWidth()}
+                    strokes={ink().present[index]}
+                    draft={
+                      draft()?.pageIndex === index ? draft()?.stroke : undefined
+                    }
+                    hidden={erased()}
+                  />
+                )}
+              </Index>
+            </Show>
+          </div>
+        </div>
+      </section>
+
+      <Show when={fullScreen()}>
+        {(entered) => (
+          <FullScreenView
+            pages={sheet.pages}
+            name={name()}
+            ink={ink().present}
+            startPage={entered().startPage}
+            onExit={exitFullScreen}
+          />
+        )}
+      </Show>
+    </>
   )
 }
 

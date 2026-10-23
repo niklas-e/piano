@@ -32,6 +32,11 @@ export function SheetPage(props: {
   strokes: readonly Stroke[]
   draft: Stroke | undefined
   hidden: ReadonlySet<Stroke>
+  /**
+   * Whether to keep the page rendered. When left out, pages near the viewport
+   * are rendered.
+   */
+  active?: boolean
 }) {
   css`
     .sheet-page {
@@ -65,9 +70,10 @@ export function SheetPage(props: {
   let content: HTMLDivElement | undefined
   const [isNearViewport, setIsNearViewport] = createSignal(false)
   const height = () => props.width * props.source.aspectRatio
+  const isActive = () => props.active ?? isNearViewport()
 
   onMount(() => {
-    if (!element) {
+    if (!element || props.active !== undefined) {
       return
     }
 
@@ -88,7 +94,7 @@ export function SheetPage(props: {
     }
 
     const target = content
-    if (!isNearViewport()) {
+    if (!isActive()) {
       target.replaceChildren()
       source.page.cleanup()
       return
