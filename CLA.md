@@ -61,7 +61,9 @@ the Maintainer will publish its complete corresponding source without charge,
 including changes and scripts needed to build, install, run and modify it.
 The Project's own material will use the license in effect when You submitted
 the Contribution, or another license approved by the Open Source Initiative.
-Third-party material retains its applicable licenses and notices.
+Third-party material retains its applicable licenses and notices. The
+published source need not include passwords, keys, tokens or other
+credentials.
 
 Source must remain available while the Maintainer publicly distributes or
 officially hosts that version, and longer if its license requires. Additional

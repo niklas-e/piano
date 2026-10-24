@@ -9,7 +9,8 @@ You keep the copyright to your work. The [Contributor License Agreement](CLA.md)
 lets the maintainer offer contributions under additional terms, subject to its
 open source and hosting commitments.
 
-Before your first contribution is incorporated, read version 1.0 (2026-10-24)
+Before your first contribution is incorporated, read
+[version 1.0 (2026-10-24)](https://github.com/niklas-e/piano/blob/cla-v1.0/CLA.md)
 and actively check the PR template's box, or comment on the relevant PR or issue:
 
 > I have read and accept the Piano Practice Contributor License Agreement,
