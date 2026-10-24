@@ -1,6 +1,7 @@
 import {
   createEffect,
   createSignal,
+  createUniqueId,
   For,
   Index,
   type JSX,
@@ -194,6 +195,60 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
       box-shadow: 0 0 0 2px #2f251d;
     }
 
+    .popover {
+      background: #fffaf2;
+      border: 1px solid #dfd1bf;
+      border-radius: 0.75rem;
+      box-shadow: 0 0.5rem 1.5rem rgba(47, 37, 29, 0.18);
+      margin: auto;
+      padding: 0.375rem;
+    }
+
+    /* Just below the button that opened it, kept on screen. Without anchor
+       positioning, it's shown in the middle of the screen instead. */
+    @supports (position-area: block-end) {
+      .popover {
+        inset: auto;
+        margin: 0.25rem 0;
+        position-area: block-end span-inline-end;
+        position-try-fallbacks: flip-inline;
+      }
+
+      .popover.menu {
+        position-area: block-end span-inline-start;
+      }
+    }
+
+    .menu {
+      flex-direction: column;
+    }
+
+    .menu:popover-open {
+      display: flex;
+    }
+
+    .menu-item {
+      align-items: center;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      display: flex;
+      font-weight: 700;
+      gap: 0.75rem;
+      min-height: 2.75rem;
+      padding: 0.5rem 1rem 0.5rem 0.75rem;
+      text-align: start;
+      white-space: nowrap;
+    }
+
+    .menu-item:hover:not(:disabled) {
+      background: #efe3d2;
+    }
+
+    .menu-item:disabled {
+      cursor: not-allowed;
+      opacity: 0.38;
+    }
+
     .width-dot {
       background: currentColor;
       border-radius: 999px;
@@ -311,6 +366,8 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   const strokeCount = () => inkStrokeCount(ink().present)
 
   let toolbar: HTMLDivElement | undefined
+  let menu: HTMLFieldSetElement | undefined
+  const menuId = createUniqueId()
   let scroller: HTMLDivElement | undefined
   let pagesElement: HTMLDivElement | undefined
 
@@ -612,6 +669,11 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   const handlePointerDown: JSX.EventHandler<HTMLDivElement, PointerEvent> = (
     event,
   ) => {
+    // A tap that closes a popover only closes it.
+    if (toolbar?.querySelector(":popover-open")) {
+      return
+    }
+
     const currentTool = tool()
     if (currentTool === "scroll") {
       if (event.pointerType === "mouse" && event.button === 0) {
@@ -951,16 +1013,6 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
             >
               <PhIcon name="arrow-clockwise" aria-hidden="true" size={22} />
             </button>
-            <button
-              type="button"
-              class="tool-button"
-              aria-label="Clear all drawings"
-              title="Clear all drawings"
-              disabled={strokeCount() === 0}
-              onClick={clearAll}
-            >
-              <PhIcon name="broom" aria-hidden="true" size={22} />
-            </button>
           </fieldset>
 
           <fieldset class="tool-group" aria-label="Zoom">
@@ -1035,29 +1087,60 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
             </button>
           </fieldset>
 
-          <fieldset class="tool-group" aria-label="File">
+          <button
+            type="button"
+            class="tool-button"
+            aria-label="More"
+            title="More"
+            popovertarget={menuId}
+          >
+            <PhIcon name="dots-three" aria-hidden="true" size={22} />
+          </button>
+          <fieldset
+            ref={menu}
+            id={menuId}
+            class="popover menu"
+            popover
+            aria-label="More"
+          >
             <button
               type="button"
-              class="tool-button"
-              aria-label="Download with drawings"
-              title="Download with drawings"
+              class="menu-item"
               disabled={exportState() === "exporting"}
-              onClick={() => void download()}
+              onClick={() => {
+                menu?.hidePopover()
+                void download()
+              }}
             >
               <PhIcon name="download-simple" aria-hidden="true" size={22} />
+              Download with drawings
             </button>
             <Show when={canShareFiles}>
               <button
                 type="button"
-                class="tool-button"
-                aria-label="Share with drawings"
-                title="Share with drawings"
+                class="menu-item"
                 disabled={exportState() === "exporting"}
-                onClick={() => void share()}
+                onClick={() => {
+                  menu?.hidePopover()
+                  void share()
+                }}
               >
                 <PhIcon name="share-network" aria-hidden="true" size={22} />
+                Share with drawings
               </button>
             </Show>
+            <button
+              type="button"
+              class="menu-item"
+              disabled={strokeCount() === 0}
+              onClick={() => {
+                menu?.hidePopover()
+                clearAll()
+              }}
+            >
+              <PhIcon name="broom" aria-hidden="true" size={22} />
+              Clear all drawings
+            </button>
           </fieldset>
         </div>
 

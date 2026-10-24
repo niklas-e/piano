@@ -27,6 +27,7 @@ export const iconModuleLoaders = {
   "download-simple": () =>
     import("@phosphor-icons/webcomponents/PhDownloadSimple"),
   "share-network": () => import("@phosphor-icons/webcomponents/PhShareNetwork"),
+  "dots-three": () => import("@phosphor-icons/webcomponents/PhDotsThree"),
   "corners-out": () => import("@phosphor-icons/webcomponents/PhCornersOut"),
   "corners-in": () => import("@phosphor-icons/webcomponents/PhCornersIn"),
   "caret-left": () => import("@phosphor-icons/webcomponents/PhCaretLeft"),

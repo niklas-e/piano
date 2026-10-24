@@ -32,6 +32,7 @@ async function drawRedLine(
 
 async function downloadWithDrawings(page: Page) {
   const downloadPromise = page.waitForEvent("download")
+  await page.getByRole("button", { name: "More" }).click()
   await page.getByRole("button", { name: "Download with drawings" }).click()
   const download = await downloadPromise
   const path = await download.path()

@@ -153,13 +153,33 @@ test("undo, redo, erase and clear all change the drawings", async ({
   await page.getByRole("button", { name: "Undo" }).click()
   await expect(strokes).toHaveCount(2)
 
+  await page.getByRole("button", { name: "More" }).click()
   await page.getByRole("button", { name: "Clear all drawings" }).click()
   await expect(strokes).toHaveCount(0)
+  await page.getByRole("button", { name: "More" }).click()
   await expect(
     page.getByRole("button", { name: "Clear all drawings" }),
   ).toBeDisabled()
   await page.getByRole("button", { name: "Undo" }).click()
   await expect(strokes).toHaveCount(2)
+})
+
+test("tapping the page to close a menu doesn't draw", async ({ page }) => {
+  await page.goto("/sheet-music")
+  await addSheets(page, [await pdfFile("Etude in C.pdf", 1)])
+  await page.getByRole("link", { name: "Etude in C" }).click()
+
+  await page.getByRole("button", { name: "Pen" }).click()
+  await page.getByRole("button", { name: "More" }).click()
+  const clearAll = page.getByRole("button", { name: "Clear all drawings" })
+  await expect(clearAll).toBeVisible()
+
+  await drawOnPage(page, 0, [[0.5, 0.5]])
+  await expect(clearAll).toBeHidden()
+  await expect(inkPaths(page, 0, "pen")).toHaveCount(0)
+
+  await drawOnPage(page, 0, [[0.5, 0.5]])
+  await expect(inkPaths(page, 0, "pen")).toHaveCount(1)
 })
 
 test("the scroll tool never draws", async ({ page }) => {
