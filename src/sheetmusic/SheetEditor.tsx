@@ -118,6 +118,11 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
       gap: 0.25rem;
     }
 
+    /* Drawing on the left, and looking around the sheet on the right. */
+    .tool-group.zoom {
+      margin-inline-start: auto;
+    }
+
     .tool-button {
       align-items: center;
       border: 1px solid transparent;
@@ -319,6 +324,10 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
       .toolbar {
         gap: 0.25rem 0.5rem;
         justify-content: center;
+      }
+
+      .tool-group.zoom {
+        margin-inline-start: 0;
       }
 
       .tool-button {
@@ -1065,7 +1074,7 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
             </button>
           </fieldset>
 
-          <fieldset class="tool-group" aria-label="Zoom">
+          <fieldset class="tool-group zoom" aria-label="Zoom">
             <button
               type="button"
               class="tool-button"
