@@ -85,6 +85,14 @@ export async function addSheets(
 }
 
 /** Drags across a page, with coordinates as fractions of the page size. */
+/** Picks a tool, without tapping an already picked one to open its style. */
+export async function selectTool(page: Page, name: string) {
+  const button = page.getByRole("button", { name, exact: true })
+  if ((await button.getAttribute("aria-pressed")) !== "true") {
+    await button.click()
+  }
+}
+
 export async function drawOnPage(
   page: Page,
   pageIndex: number,

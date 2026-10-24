@@ -7,6 +7,7 @@ import {
   drawOnPage,
   inkPaths,
   pagePixel,
+  selectTool,
 } from "../fixtures/sheets"
 
 async function goOfflineAfterFirstVisit(page: Page, context: BrowserContext) {
@@ -53,7 +54,7 @@ test("PDFs can be added, drawn on and downloaded offline", async ({
   )
   expect(titleRow.some(({ r }) => r < 100)).toBe(true)
 
-  await page.getByRole("button", { name: "Pen" }).click()
+  await selectTool(page, "Pen")
   await drawOnPage(page, 0, [
     [0.2, 0.5],
     [0.8, 0.5],

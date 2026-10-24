@@ -10,6 +10,7 @@ import {
   inkPaths,
   pagePixel,
   passwordProtectedScorePdfPath,
+  selectTool,
 } from "../fixtures/sheets"
 
 async function openSheet(page: Page, name: string) {
@@ -24,7 +25,7 @@ async function drawRedLine(
   from: [number, number],
   to: [number, number],
 ) {
-  await page.getByRole("button", { name: "Pen" }).click()
+  await selectTool(page, "Pen")
   await page.getByRole("button", { name: "Color and line width" }).click()
   await page.getByRole("button", { name: "Red", exact: true }).click()
   await page.getByRole("button", { name: "Bold" }).click()

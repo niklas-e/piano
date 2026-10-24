@@ -381,6 +381,17 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
   let menu: HTMLFieldSetElement | undefined
   const menuId = createUniqueId()
   const styleId = createUniqueId()
+  let stylePopover: HTMLFieldSetElement | undefined
+  const isStyleOpen = () => stylePopover?.matches(":popover-open") ?? false
+  const closeStyle = () => {
+    if (isStyleOpen()) {
+      stylePopover?.hidePopover()
+    }
+  }
+  // Tapping the active pen or highlighter again opens its style, and once
+  // more closes it. The tap closes it by itself before its click arrives, so
+  // whether it was open is noted when the tap starts.
+  let styleWasOpen = false
   let scroller: HTMLDivElement | undefined
   let pagesElement: HTMLDivElement | undefined
 
@@ -935,7 +946,20 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
                   aria-label={item.label}
                   title={item.label}
                   aria-pressed={tool() === item.tool}
-                  onClick={() => setTool(item.tool)}
+                  onPointerDown={() => {
+                    styleWasOpen = isStyleOpen()
+                  }}
+                  onClick={(event) => {
+                    const wasOpen = styleWasOpen || isStyleOpen()
+                    styleWasOpen = false
+                    if (tool() !== item.tool || inkTool() === undefined) {
+                      setTool(item.tool)
+                    } else if (wasOpen) {
+                      closeStyle()
+                    } else {
+                      stylePopover?.showPopover({ source: event.currentTarget })
+                    }
+                  }}
                 >
                   <PhIcon name={item.icon} aria-hidden="true" size={22} />
                 </button>
@@ -959,6 +983,7 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
             <PhIcon name="caret-down" aria-hidden="true" size={14} />
           </button>
           <fieldset
+            ref={stylePopover}
             id={styleId}
             class="popover style"
             popover

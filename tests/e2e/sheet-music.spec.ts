@@ -5,6 +5,7 @@ import {
   createScorePng,
   drawOnPage,
   inkPaths,
+  selectTool,
 } from "../fixtures/sheets"
 
 const pdfFile = async (name = "Etude in C.pdf", pageCount = 3) => ({
@@ -82,7 +83,7 @@ test("drawings are kept on the page after reloading", async ({ page }) => {
   await addSheets(page, [await pdfFile()])
   await page.getByRole("link", { name: "Etude in C" }).click()
 
-  await page.getByRole("button", { name: "Pen" }).click()
+  await selectTool(page, "Pen")
   await drawOnPage(page, 0, [
     [0.2, 0.3],
     [0.4, 0.35],
@@ -126,7 +127,7 @@ test("undo, redo, erase and clear all change the drawings", async ({
   await page.getByRole("link", { name: "Etude in C" }).click()
 
   const strokes = inkPaths(page, 0, "pen")
-  await page.getByRole("button", { name: "Pen" }).click()
+  await selectTool(page, "Pen")
   await drawOnPage(page, 0, [
     [0.2, 0.2],
     [0.8, 0.2],
@@ -167,12 +168,51 @@ test("undo, redo, erase and clear all change the drawings", async ({
   await expect(strokes).toHaveCount(2)
 })
 
+test("tapping the active pen again shows its colors and line widths", async ({
+  page,
+}) => {
+  await page.goto("/sheet-music")
+  await addSheets(page, [await pdfFile("Etude in C.pdf", 1)])
+  await page.getByRole("link", { name: "Etude in C" }).click()
+
+  const pen = page.getByRole("button", { name: "Pen" })
+  const red = page.getByRole("button", { name: "Red", exact: true })
+  await page.getByRole("button", { name: "Scroll" }).click()
+  await pen.click()
+  await expect(red).toBeHidden()
+
+  await pen.click()
+  await expect(red).toBeVisible()
+  await red.click()
+  await pen.click()
+  await expect(red).toBeHidden()
+
+  await pen.press("Enter")
+  await expect(red).toBeVisible()
+  await pen.press("Enter")
+  await expect(red).toBeHidden()
+
+  await pen.click()
+  await page.getByRole("button", { name: "Highlighter" }).click()
+  await expect(page.getByRole("button", { name: "Pink" })).toBeHidden()
+  await expect(
+    page.getByRole("button", { name: "Highlighter" }),
+  ).toHaveAttribute("aria-pressed", "true")
+
+  await selectTool(page, "Pen")
+  await drawOnPage(page, 0, [
+    [0.2, 0.2],
+    [0.8, 0.2],
+  ])
+  await expect(inkPaths(page, 0, "pen")).toHaveAttribute("stroke", "#c62f2f")
+})
+
 test("tapping the page to close a menu doesn't draw", async ({ page }) => {
   await page.goto("/sheet-music")
   await addSheets(page, [await pdfFile("Etude in C.pdf", 1)])
   await page.getByRole("link", { name: "Etude in C" }).click()
 
-  await page.getByRole("button", { name: "Pen" }).click()
+  await selectTool(page, "Pen")
   await page.getByRole("button", { name: "More" }).click()
   const clearAll = page.getByRole("button", { name: "Clear all drawings" })
   await expect(clearAll).toBeVisible()
@@ -208,7 +248,7 @@ test("zooming resizes pages and drawings stay in place", async ({ page }) => {
   await addSheets(page, [await pdfFile("Etude in C.pdf", 1)])
   await page.getByRole("link", { name: "Etude in C" }).click()
 
-  await page.getByRole("button", { name: "Pen" }).click()
+  await selectTool(page, "Pen")
   await drawOnPage(page, 0, [
     [0.25, 0.25],
     [0.5, 0.25],
@@ -362,7 +402,7 @@ test("undo shortcuts in the title field don't undo drawings", async ({
   await page.goto("/sheet-music")
   await addSheets(page, [await pdfFile("Etude in C.pdf", 1)])
   await page.getByRole("link", { name: "Etude in C" }).click()
-  await page.getByRole("button", { name: "Pen" }).click()
+  await selectTool(page, "Pen")
   await drawOnPage(page, 0, [
     [0.2, 0.4],
     [0.8, 0.4],
@@ -402,7 +442,7 @@ test("the drawing toolbar fits a phone screen", async ({ page }) => {
   await page.goto("/sheet-music")
   await addSheets(page, [await pdfFile()])
   await page.getByRole("link", { name: "Etude in C" }).click()
-  await page.getByRole("button", { name: "Pen" }).click()
+  await selectTool(page, "Pen")
 
   const toolbar = page.getByRole("toolbar", { name: "Drawing tools" })
   await toolbar.getByRole("button", { name: "Color and line width" }).click()
@@ -427,7 +467,7 @@ test.describe("on a touch screen", () => {
     await page.goto("/sheet-music")
     await addSheets(page, [await pdfFile()])
     await page.getByRole("link", { name: "Etude in C" }).click()
-    await page.getByRole("button", { name: "Pen" }).click()
+    await selectTool(page, "Pen")
 
     const client = await page.context().newCDPSession(page)
     const touch = async (
