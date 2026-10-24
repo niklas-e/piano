@@ -35,17 +35,11 @@ export type Playback = { stop(): void }
 
 let preparedContext: AudioContext | undefined
 
-/**
- * Plays `notes`, such as "C#4", on a piano at one note per beat of `clock`, so
- * they keep time with the metronome. `onNote` is called with each note's
- * position as it sounds, and with nothing once the last one has finished or
- * playback is stopped.
- */
-export async function playNotes(
+/** Starts audio and loads the samples `notes` need, ready to play them. */
+async function loadPiano(
   clock: BeatClock,
   notes: readonly string[],
-  onNote: (position: number | undefined) => void,
-): Promise<Playback> {
+): Promise<AudioContext> {
   const context = clock.startAudio()
   if (!context) {
     throw new Error("Audio isn't available")
@@ -59,6 +53,21 @@ export async function playNotes(
   await Promise.all(
     notes.map((note) => getSampleBuffer({ note }, pianoSamples)),
   )
+  return context
+}
+
+/**
+ * Plays `notes`, such as "C#4", on a piano at one note per beat of `clock`, so
+ * they keep time with the metronome. `onNote` is called with each note's
+ * position as it sounds, and with nothing once the last one has finished or
+ * playback is stopped.
+ */
+export async function playNotes(
+  clock: BeatClock,
+  notes: readonly string[],
+  onNote: (position: number | undefined) => void,
+): Promise<Playback> {
+  const context = await loadPiano(clock, notes)
 
   const timers = new Set<number>()
   const at = (time: number, action: () => void) => {
