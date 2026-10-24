@@ -1,10 +1,5 @@
+import { type BeatClock, createBeatClock } from "./beatClock.ts"
 import { DEFAULT_BPM, MAX_BPM, MIN_BPM } from "./preferences.ts"
-
-declare global {
-  interface Window {
-    webkitAudioContext?: typeof AudioContext
-  }
-}
 
 export type MetronomeEngine = {
   start(): void
@@ -18,8 +13,6 @@ export type MetronomeEngine = {
 
 const audioUnavailableMessage =
   "Audio click unavailable. Visual pulse is still active."
-const schedulerIntervalMs = 25
-const scheduleAheadSeconds = 0.1
 
 export function clampBpm(value: number): number {
   if (!Number.isFinite(value)) {
@@ -74,24 +67,17 @@ export function formatElapsed(ms: number): string {
   return `${minutes}:${String(seconds).padStart(2, "0")}`
 }
 
-export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
-  let bpm = clampBpm(initialBpm)
-  let audioContext: AudioContext | undefined
+export function createMetronomeEngine(
+  initialBpm: number,
+  clock: BeatClock = createBeatClock(),
+): MetronomeEngine {
   let audioError: string | undefined
-  let intervalId: number | undefined
-  let nextBeatTime = 0
-  let fallbackStartTime = 0
-  let useFallbackClock = false
+  let leaveClock: (() => void) | undefined
   let beat = 0
   const listeners = new Set<(beat: number) => void>()
   const audioErrorListeners = new Set<(message: string) => void>()
 
-  const fallbackCurrentTime = () =>
-    (performance.now() - fallbackStartTime) / 1000
-  const currentTime = () =>
-    useFallbackClock
-      ? fallbackCurrentTime()
-      : (audioContext?.currentTime ?? fallbackCurrentTime())
+  clock.setBpm(clampBpm(initialBpm))
 
   const emitPulse = () => {
     beat += 1
@@ -101,8 +87,6 @@ export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
   }
 
   const reportAudioError = () => {
-    useFallbackClock = true
-
     if (audioError === audioUnavailableMessage) {
       return
     }
@@ -112,9 +96,11 @@ export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
       listener(audioUnavailableMessage)
     }
   }
+  const stopWatchingAudio = clock.onAudioFailure(reportAudioError)
 
   const scheduleClick = (time: number) => {
-    if (!audioContext || useFallbackClock) {
+    const audioContext = clock.audio()
+    if (!audioContext) {
       return
     }
 
@@ -130,51 +116,27 @@ export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
       oscillator.start(time)
       oscillator.stop(time + 0.05)
     } catch {
-      reportAudioError()
-    }
-  }
-
-  const scheduler = () => {
-    while (nextBeatTime <= currentTime() + scheduleAheadSeconds) {
-      scheduleClick(nextBeatTime)
-      emitPulse()
-      nextBeatTime += msPerBeat(bpm) / 1000
+      clock.reportAudioFailure()
     }
   }
 
   return {
     start() {
-      if (intervalId !== undefined) {
+      if (leaveClock !== undefined) {
         return
       }
 
-      try {
-        const AudioContextConstructor =
-          window.AudioContext ?? window.webkitAudioContext
-        if (!AudioContextConstructor) {
-          reportAudioError()
-        } else if (!audioContext) {
-          audioContext = new AudioContextConstructor()
-        }
-        void audioContext?.resume().catch(reportAudioError)
-      } catch {
-        reportAudioError()
-      }
-
-      fallbackStartTime =
-        performance.now() - (audioContext?.currentTime ?? 0) * 1000
-      nextBeatTime = currentTime()
-      scheduler()
-      intervalId = window.setInterval(scheduler, schedulerIntervalMs)
+      leaveClock = clock.join(({ time }) => {
+        scheduleClick(time)
+        emitPulse()
+      })
     },
     stop() {
-      if (intervalId !== undefined) {
-        window.clearInterval(intervalId)
-        intervalId = undefined
-      }
+      leaveClock?.()
+      leaveClock = undefined
     },
     setBpm(nextBpm: number) {
-      bpm = clampBpm(nextBpm)
+      clock.setBpm(clampBpm(nextBpm))
     },
     onPulse(callback: (beat: number) => void) {
       listeners.add(callback)
@@ -189,7 +151,8 @@ export function createMetronomeEngine(initialBpm: number): MetronomeEngine {
     },
     dispose() {
       this.stop()
-      void audioContext?.close()
+      stopWatchingAudio()
+      clock.close()
       listeners.clear()
       audioErrorListeners.clear()
     },
