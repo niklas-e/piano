@@ -20,9 +20,9 @@ export const INK_COLORS: Record<InkTool, readonly InkColor[]> = {
 }
 
 export const LINE_WIDTH_OPTIONS = [
-  { name: "fine", label: "Fine", dotSize: 4 },
-  { name: "medium", label: "Medium", dotSize: 8 },
-  { name: "bold", label: "Bold", dotSize: 12 },
+  { name: "fine", label: "Fine" },
+  { name: "medium", label: "Medium" },
+  { name: "bold", label: "Bold" },
 ] as const
 export type LineWidthName = (typeof LINE_WIDTH_OPTIONS)[number]["name"]
 export const DEFAULT_LINE_WIDTH: LineWidthName = "fine"
@@ -31,6 +31,15 @@ export const DEFAULT_LINE_WIDTH: LineWidthName = "fine"
 export const LINE_WIDTHS: Record<InkTool, Record<LineWidthName, number>> = {
   pen: { fine: 0.0018, medium: 0.003, bold: 0.0055 },
   highlighter: { fine: 0.012, medium: 0.02, bold: 0.032 },
+}
+
+/** Line widths in CSS pixels for the samples shown when picking one. */
+export const LINE_WIDTH_SAMPLES: Record<
+  InkTool,
+  Record<LineWidthName, number>
+> = {
+  pen: { fine: 1.5, medium: 2.5, bold: 4.5 },
+  highlighter: { fine: 4, medium: 6.5, bold: 10 },
 }
 
 /** Eraser reach in CSS pixels, so it feels the same at any zoom level. */

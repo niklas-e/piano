@@ -89,7 +89,9 @@ test("drawings are kept on the page after reloading", async ({ page }) => {
     [0.6, 0.3],
   ])
   await page.getByRole("button", { name: "Highlighter" }).click()
+  await page.getByRole("button", { name: "Color and line width" }).click()
   await page.getByRole("button", { name: "Pink" }).click()
+  await page.keyboard.press("Escape")
   await drawOnPage(page, 1, [
     [0.1, 0.5],
     [0.8, 0.5],
@@ -109,6 +111,7 @@ test("drawings are kept on the page after reloading", async ({ page }) => {
 
   // The chosen colour is remembered too.
   await page.getByRole("button", { name: "Highlighter" }).click()
+  await page.getByRole("button", { name: "Color and line width" }).click()
   await expect(page.getByRole("button", { name: "Pink" })).toHaveAttribute(
     "aria-pressed",
     "true",
@@ -188,6 +191,9 @@ test("the scroll tool never draws", async ({ page }) => {
   await page.getByRole("link", { name: "Etude in C" }).click()
 
   await page.getByRole("button", { name: "Scroll" }).click()
+  await expect(
+    page.getByRole("button", { name: "Color and line width" }),
+  ).toBeDisabled()
   await drawOnPage(page, 0, [
     [0.2, 0.2],
     [0.8, 0.2],
@@ -399,10 +405,11 @@ test("the drawing toolbar fits a phone screen", async ({ page }) => {
   await page.getByRole("button", { name: "Pen" }).click()
 
   const toolbar = page.getByRole("toolbar", { name: "Drawing tools" })
-  for (const name of ["Undo", "Zoom in", "Bold", "Red"]) {
+  await toolbar.getByRole("button", { name: "Color and line width" }).click()
+  for (const name of ["Undo", "Zoom in", "More", "Bold", "Red"]) {
     await expect(
       toolbar.getByRole("button", { name, exact: true }),
-    ).toBeInViewport()
+    ).toBeInViewport({ ratio: 1 })
   }
   expect(
     await page.evaluate(

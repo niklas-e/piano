@@ -25,8 +25,10 @@ async function drawRedLine(
   to: [number, number],
 ) {
   await page.getByRole("button", { name: "Pen" }).click()
+  await page.getByRole("button", { name: "Color and line width" }).click()
   await page.getByRole("button", { name: "Red", exact: true }).click()
   await page.getByRole("button", { name: "Bold" }).click()
+  await page.keyboard.press("Escape")
   await drawOnPage(page, pageIndex, [from, to])
 }
 

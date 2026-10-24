@@ -15,6 +15,7 @@ import {
   type DrawingTool,
   INK_COLORS,
   LINE_WIDTH_OPTIONS,
+  LINE_WIDTH_SAMPLES,
   LINE_WIDTHS,
   type LineWidthName,
   MAX_FIT_WIDTH_PX,
@@ -179,6 +180,34 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
       right: 0.4rem;
     }
 
+    .style-button {
+      gap: 0.125rem;
+      padding-inline: 0.375rem;
+    }
+
+    .style-button :global(.ph-icon) {
+      opacity: 0.6;
+    }
+
+    .style:popover-open {
+      display: grid;
+      gap: 0.25rem;
+    }
+
+    .style-options {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .width-option[aria-pressed="true"] {
+      background: none;
+      box-shadow: inset 0 0 0 2px #2f251d;
+    }
+
+    .width-option[aria-pressed="true"]:hover {
+      background: #efe3d2;
+    }
+
     .swatch {
       background: var(--swatch);
       border: 2px solid #fffaf2;
@@ -249,12 +278,6 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
       opacity: 0.38;
     }
 
-    .width-dot {
-      background: currentColor;
-      border-radius: 999px;
-      display: block;
-    }
-
     .pages-scroll {
       overflow-x: auto;
     }
@@ -292,7 +315,6 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Ccircle cx='11' cy='11' r='10' fill='white' fill-opacity='0.5' stroke='%232f251d' stroke-width='1.5'/%3E%3C/svg%3E") 11 11, cell;
     }
 
-    /* On phones, keep undo next to the tools and let the rest wrap below. */
     @media (max-width: 640px) {
       .toolbar {
         gap: 0.25rem 0.5rem;
@@ -305,18 +327,6 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
         padding: 0.4rem;
       }
 
-      .swatch {
-        height: 1.75rem;
-        width: 1.75rem;
-      }
-
-      .tool-group.tools {
-        order: -2;
-      }
-
-      .tool-group.history {
-        order: -1;
-      }
     }
   `
 
@@ -362,12 +372,15 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
     const current = tool()
     return current === "pen" || current === "highlighter" ? current : undefined
   }
+  /** The tool whose style is shown, which is the pen when none draws. */
+  const styledTool = () => inkTool() ?? "pen"
   const pageWidth = () => Math.floor(fitWidth() * zoom())
   const strokeCount = () => inkStrokeCount(ink().present)
 
   let toolbar: HTMLDivElement | undefined
   let menu: HTMLFieldSetElement | undefined
   const menuId = createUniqueId()
+  const styleId = createUniqueId()
   let scroller: HTMLDivElement | undefined
   let pagesElement: HTMLDivElement | undefined
 
@@ -913,7 +926,7 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
           role="toolbar"
           aria-label="Drawing tools"
         >
-          <fieldset class="tool-group tools" aria-label="Tool">
+          <fieldset class="tool-group" aria-label="Tool">
             <For each={tools}>
               {(item) => (
                 <button
@@ -930,65 +943,77 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
             </For>
           </fieldset>
 
-          <Show when={inkTool()}>
-            {(currentTool) => (
-              <>
-                <fieldset class="tool-group" aria-label="Color">
-                  <For each={INK_COLORS[currentTool()]}>
-                    {(color) => (
-                      <button
-                        type="button"
-                        class="swatch"
-                        style={{ "--swatch": color.value }}
-                        aria-label={color.label}
-                        title={color.label}
-                        aria-pressed={colors()[currentTool()] === color.value}
-                        onClick={() => {
-                          setColors((current) => ({
-                            ...current,
-                            [currentTool()]: color.value,
-                          }))
-                          writeInkColorPreference(currentTool(), color.value)
-                        }}
-                      />
-                    )}
-                  </For>
-                </fieldset>
-                <fieldset class="tool-group" aria-label="Line width">
-                  <For each={LINE_WIDTH_OPTIONS}>
-                    {(option) => (
-                      <button
-                        type="button"
-                        class="tool-button"
-                        aria-label={option.label}
-                        title={option.label}
-                        aria-pressed={
-                          lineWidths()[currentTool()] === option.name
-                        }
-                        onClick={() => {
-                          setLineWidths((current) => ({
-                            ...current,
-                            [currentTool()]: option.name,
-                          }))
-                          writeLineWidthPreference(currentTool(), option.name)
-                        }}
-                      >
-                        <span
-                          class="width-dot"
-                          style={{
-                            width: `${option.dotSize}px`,
-                            height: `${option.dotSize}px`,
-                          }}
-                        />
-                      </button>
-                    )}
-                  </For>
-                </fieldset>
-              </>
-            )}
-          </Show>
+          <button
+            type="button"
+            class="tool-button style-button"
+            aria-label="Color and line width"
+            title="Color and line width"
+            disabled={inkTool() === undefined}
+            popovertarget={styleId}
+          >
+            <StrokeSample
+              tool={styledTool()}
+              color={colors()[styledTool()]}
+              width={lineWidths()[styledTool()]}
+            />
+            <PhIcon name="caret-down" aria-hidden="true" size={14} />
+          </button>
+          <fieldset
+            id={styleId}
+            class="popover style"
+            popover
+            aria-label="Color and line width"
+          >
+            <fieldset class="style-options" aria-label="Color">
+              <For each={INK_COLORS[styledTool()]}>
+                {(color) => (
+                  <button
+                    type="button"
+                    class="swatch"
+                    style={{ "--swatch": color.value }}
+                    aria-label={color.label}
+                    title={color.label}
+                    aria-pressed={colors()[styledTool()] === color.value}
+                    onClick={() => {
+                      setColors((current) => ({
+                        ...current,
+                        [styledTool()]: color.value,
+                      }))
+                      writeInkColorPreference(styledTool(), color.value)
+                    }}
+                  />
+                )}
+              </For>
+            </fieldset>
+            <fieldset class="style-options" aria-label="Line width">
+              <For each={LINE_WIDTH_OPTIONS}>
+                {(option) => (
+                  <button
+                    type="button"
+                    class="tool-button width-option"
+                    aria-label={option.label}
+                    title={option.label}
+                    aria-pressed={lineWidths()[styledTool()] === option.name}
+                    onClick={() => {
+                      setLineWidths((current) => ({
+                        ...current,
+                        [styledTool()]: option.name,
+                      }))
+                      writeLineWidthPreference(styledTool(), option.name)
+                    }}
+                  >
+                    <StrokeSample
+                      tool={styledTool()}
+                      color={colors()[styledTool()]}
+                      width={option.name}
+                    />
+                  </button>
+                )}
+              </For>
+            </fieldset>
+          </fieldset>
 
-          <fieldset class="tool-group history" aria-label="History">
+          <fieldset class="tool-group" aria-label="History">
             <button
               type="button"
               class="tool-button"
@@ -1202,6 +1227,26 @@ export function SheetEditor(props: { sheet: LoadedSheet }) {
         )}
       </Show>
     </>
+  )
+}
+
+/** A short squiggle showing how a stroke will look. */
+function StrokeSample(props: {
+  tool: InkTool
+  color: string
+  width: LineWidthName
+}) {
+  return (
+    <svg width="36" height="20" viewBox="0 0 36 20" aria-hidden="true">
+      <path
+        d="M5 12c3-5 6-6 9-3s5 5 8 2 5-5 9-3"
+        fill="none"
+        stroke={props.color}
+        stroke-width={LINE_WIDTH_SAMPLES[props.tool][props.width]}
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
   )
 }
 
