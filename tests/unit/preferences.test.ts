@@ -57,14 +57,14 @@ test("ink colours are remembered per tool and only from that tool's palette", ()
 test("line widths are remembered per tool", () => {
   const storage = memoryStorage()
 
-  assert.equal(readLineWidthPreference("pen", storage), "medium")
+  assert.equal(readLineWidthPreference("pen", storage), "fine")
 
   writeLineWidthPreference("pen", "bold", storage)
   assert.equal(readLineWidthPreference("pen", storage), "bold")
-  assert.equal(readLineWidthPreference("highlighter", storage), "medium")
+  assert.equal(readLineWidthPreference("highlighter", storage), "fine")
 
   storage.setItem("piano:line-width:pen", "huge")
-  assert.equal(readLineWidthPreference("pen", storage), "medium")
+  assert.equal(readLineWidthPreference("pen", storage), "fine")
 })
 
 test("half-page turns are off until turned on", () => {

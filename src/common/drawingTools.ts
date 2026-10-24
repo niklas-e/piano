@@ -25,7 +25,7 @@ export const LINE_WIDTH_OPTIONS = [
   { name: "bold", label: "Bold", dotSize: 12 },
 ] as const
 export type LineWidthName = (typeof LINE_WIDTH_OPTIONS)[number]["name"]
-export const DEFAULT_LINE_WIDTH: LineWidthName = "medium"
+export const DEFAULT_LINE_WIDTH: LineWidthName = "fine"
 
 /** Line widths in page units, where the page is one unit wide. */
 export const LINE_WIDTHS: Record<InkTool, Record<LineWidthName, number>> = {
