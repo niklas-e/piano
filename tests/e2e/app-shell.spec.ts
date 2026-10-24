@@ -11,6 +11,28 @@ test("root shows homepage launcher links", async ({ page }) => {
   }
 })
 
+test("the footer links to the source code and stays at the bottom", async ({
+  page,
+}) => {
+  await page.goto("/metronome")
+
+  const footer = page.getByRole("contentinfo")
+  await expect(
+    footer.getByRole("link", { name: "Source code" }),
+  ).toHaveAttribute("href", "https://github.com/niklas-e/piano")
+  await expect(
+    footer.getByRole("link", { name: "AGPL-3.0 license" }),
+  ).toHaveAttribute(
+    "href",
+    "https://github.com/niklas-e/piano/blob/main/LICENSE",
+  )
+
+  // On a page shorter than the window, the footer sits at its bottom edge.
+  await page.setViewportSize({ width: 1280, height: 2000 })
+  const box = await footer.boundingBox()
+  expect(box && box.y + box.height).toBe(2000)
+})
+
 test("exercise and metronome routes render their headings", async ({
   page,
 }) => {

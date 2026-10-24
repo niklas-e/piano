@@ -10,6 +10,13 @@ opposite: one place for exercises and theory, no fluff.
 
 The app is live at <https://piano.niklas-e.fi/>
 
+## Open source and free access
+
+Piano Practice will remain open source, with the complete source of each
+official release and hosted version available without charge. Access to the
+official app will stay free while it operates. Hosting may be limited or
+discontinued if it becomes unsustainable; existing open-source rights and
+source-availability obligations still apply.
 
 ## Local Development
 
@@ -102,3 +109,21 @@ If Playwright browsers are missing, install Chromium:
 ```bash
 pnpm exec playwright install chromium
 ```
+
+## Contributing
+
+Bug reports, ideas and pull requests are welcome. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the short guide and one-time contributor
+agreement.
+
+## License
+
+Copyright (C) 2026 Niklas Engblom
+
+Piano Practice is free software: you can redistribute it and/or modify it
+under the terms of the GNU Affero General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your option)
+any later version. See [LICENSE](LICENSE) for the full text.
+
+The AGPL also covers running a modified version as a network service: if you
+host one, you must offer its users the source code of your version.

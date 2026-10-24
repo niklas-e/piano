@@ -1,5 +1,6 @@
 import { createSignal, Match, onCleanup, onMount, Switch } from "solid-js"
 import { css } from "solid-styled"
+import { AppFooter } from "./common/AppFooter"
 import { AppHeader } from "./common/AppHeader"
 import { GlobalStyles } from "./common/GlobalStyles"
 import { NotFoundPage } from "./common/NotFoundPage"
@@ -15,13 +16,18 @@ import { SightReadingPage } from "./sightreading/SightReadingPage"
 export default function App() {
   css`
     .app-shell {
+      display: flex;
+      flex-direction: column;
       min-height: 100vh;
     }
 
     .content {
+      /* Fills the space so the footer stays at the bottom of short pages. */
+      flex: 1;
       margin: 0 auto;
       max-width: 1120px;
       padding: clamp(1.25rem, 5vw, 4rem) clamp(1rem, 4vw, 3rem);
+      width: 100%;
     }
 
     @media (max-width: 420px) {
@@ -104,6 +110,8 @@ export default function App() {
           </Match>
         </Switch>
       </main>
+
+      <AppFooter />
     </div>
   )
 }
