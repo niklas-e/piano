@@ -1,11 +1,14 @@
 import { createSignal, For, onCleanup, Show } from "solid-js"
 import { css } from "solid-styled"
+import { beatClock } from "../common/beatClock"
 import { PhIcon } from "../common/PhIcon"
 import {
   readSightReadingClefPreference,
   readSightReadingDurationPreference,
+  readSightReadingSoundPreference,
   writeSightReadingClefPreference,
   writeSightReadingDurationPreference,
+  writeSightReadingSoundPreference,
 } from "../common/preferences"
 import { Staff } from "../common/Staff"
 import {
@@ -249,6 +252,7 @@ export function SightReadingPage() {
   const [duration, setDuration] = createSignal(
     readSightReadingDurationPreference(),
   )
+  const [sound, setSound] = createSignal(readSightReadingSoundPreference())
   const [phase, setPhase] = createSignal<Phase>("setup")
   const [prompt, setPrompt] = createSignal<Prompt>(makePrompt(clefSetting()))
   const [correct, setCorrect] = createSignal(0)
@@ -296,6 +300,12 @@ export function SightReadingPage() {
   const start = () => {
     writeSightReadingClefPreference(clefSetting())
     writeSightReadingDurationPreference(duration())
+    writeSightReadingSoundPreference(sound())
+    if (sound()) {
+      // Browsers only start audio from a tap or click.
+      beatClock.startAudio()
+      void import("../common/piano")
+    }
     setCorrect(0)
     setTotal(0)
     setWrong([])
@@ -319,6 +329,9 @@ export function SightReadingPage() {
         { note: current.note, clef: current.clef, picked: name },
       ])
     }
+    if (sound()) {
+      playNoteOf(current.note)
+    }
     // Flash feedback on the answered note, then advance to the next one.
     setFeedback(isCorrect ? "correct" : "wrong")
     window.clearTimeout(feedbackTimer)
@@ -326,6 +339,17 @@ export function SightReadingPage() {
       setFeedback(null)
       setPrompt(makePrompt(clefSetting()))
     }, 450)
+  }
+
+  // So the note's sound is learned along with its name and place.
+  const playNoteOf = (note: Note) => {
+    beatClock.startAudio()
+    import("../common/piano")
+      .then(({ playNote }) =>
+        playNote(beatClock, `${noteName(note)}${note.octave}`),
+      )
+      // Naming notes still works without the sound.
+      .catch((error) => console.warn(error))
   }
 
   const backToSetup = () => {
@@ -384,6 +408,26 @@ export function SightReadingPage() {
                   </button>
                 )}
               </For>
+            </fieldset>
+          </div>
+
+          <div class="field">
+            <span class="field-label">Sound</span>
+            <fieldset class="segmented" aria-label="Sound">
+              <button
+                type="button"
+                aria-pressed={sound()}
+                onClick={() => setSound(true)}
+              >
+                On
+              </button>
+              <button
+                type="button"
+                aria-pressed={!sound()}
+                onClick={() => setSound(false)}
+              >
+                Off
+              </button>
             </fieldset>
           </div>
 

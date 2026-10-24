@@ -39,6 +39,7 @@ const keys = {
   lastExerciseId: "piano:last-exercise-id",
   sightReadingClef: "piano:sight-reading-clef",
   sightReadingDuration: "piano:sight-reading-duration",
+  sightReadingSound: "piano:sight-reading-sound",
   trimMargins: "piano:trim-margins",
 } as const
 
@@ -182,6 +183,20 @@ export function writeHalfPageTurnsPreference(
   storage = getBrowserStorage(),
 ): void {
   writeStorageItem(storage, keys.halfPageTurns, String(value))
+}
+
+/** On unless turned off, so each note's sound is learned with its name. */
+export function readSightReadingSoundPreference(
+  storage = getBrowserStorage(),
+): boolean {
+  return readStorageItem(storage, keys.sightReadingSound) !== "false"
+}
+
+export function writeSightReadingSoundPreference(
+  value: boolean,
+  storage = getBrowserStorage(),
+): void {
+  writeStorageItem(storage, keys.sightReadingSound, String(value))
 }
 
 /** On unless turned off, since bigger music is almost always better. */

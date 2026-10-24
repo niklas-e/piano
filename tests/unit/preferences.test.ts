@@ -10,6 +10,7 @@ import {
   readInkColorPreference,
   readLastExerciseIdPreference,
   readLineWidthPreference,
+  readSightReadingSoundPreference,
   readTrimMarginsPreference,
   type StorageLike,
   writeBpmPreference,
@@ -19,6 +20,7 @@ import {
   writeInkColorPreference,
   writeLastExerciseIdPreference,
   writeLineWidthPreference,
+  writeSightReadingSoundPreference,
   writeTrimMarginsPreference,
 } from "../../src/common/preferences.ts"
 
@@ -83,6 +85,16 @@ test("margins are trimmed until turned off", () => {
   assert.equal(readTrimMarginsPreference(storage), false)
   writeTrimMarginsPreference(true, storage)
   assert.equal(readTrimMarginsPreference(storage), true)
+})
+
+test("sight reading sound is on until turned off", () => {
+  const storage = memoryStorage()
+
+  assert.equal(readSightReadingSoundPreference(storage), true)
+  writeSightReadingSoundPreference(false, storage)
+  assert.equal(readSightReadingSoundPreference(storage), false)
+  writeSightReadingSoundPreference(true, storage)
+  assert.equal(readSightReadingSoundPreference(storage), true)
 })
 
 test("exercise filter and hand preferences reject invalid stored values", () => {

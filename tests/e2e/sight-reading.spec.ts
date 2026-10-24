@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test"
 
+declare global {
+  interface Window {
+    soundsStarted: number
+  }
+}
+
 async function startGame(page: import("@playwright/test").Page) {
   await page.goto("/sight-reading")
   await page.getByRole("button", { name: "Start" }).click()
@@ -59,4 +65,41 @@ test("answering a note shows correct/incorrect feedback", async ({ page }) => {
 
   await expect(page.locator(".feedback-mark")).toBeVisible()
   await expect(panel).toHaveClass(/flash-(correct|wrong)/)
+})
+
+test.describe("sound", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      window.soundsStarted = 0
+      const start = AudioBufferSourceNode.prototype.start
+      AudioBufferSourceNode.prototype.start = function (...args) {
+        window.soundsStarted += 1
+        return start.apply(this, args)
+      }
+    })
+  })
+
+  test("the answered note sounds on the piano", async ({ page }) => {
+    await startGame(page)
+
+    await page.locator(".answer-grid button").first().click()
+    await page.waitForFunction(() => window.soundsStarted === 1)
+  })
+
+  test("sound can be turned off, and stays off", async ({ page }) => {
+    await page.goto("/sight-reading")
+    await page.getByRole("button", { name: "Off" }).click()
+    await page.getByRole("button", { name: "Start" }).click()
+
+    await page.locator(".answer-grid button").first().click()
+    await expect(page.locator(".feedback-mark")).toBeVisible()
+    await expect(page.locator(".feedback-mark")).toHaveCount(0)
+    expect(await page.evaluate(() => window.soundsStarted)).toBe(0)
+
+    await page.goto("/sight-reading")
+    await expect(page.getByRole("button", { name: "Off" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    )
+  })
 })

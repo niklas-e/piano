@@ -28,6 +28,10 @@ for (let midi = 21; midi <= 108; midi += 3) {
 
 /** Seconds a key keeps sounding after its beat, like lifting a finger. */
 const release = 0.3
+/** Seconds a single note is held, long enough to hear it out. */
+const singleNoteSeconds = 1
+// Superdough skips a note whose time has passed by the time it's set up.
+const singleNoteDelaySeconds = 0.05
 
 type Step = SoundValue & { position: number }
 
@@ -116,4 +120,15 @@ export async function playNotes(
   }
 
   return { stop }
+}
+
+/** Plays one note, such as "Db4", on the piano straight away. */
+export async function playNote(clock: BeatClock, note: string): Promise<void> {
+  const context = await loadPiano(clock, [note])
+  await superdough(
+    { s: "piano", note, release },
+    context.currentTime + singleNoteDelaySeconds,
+    singleNoteSeconds,
+    1,
+  )
 }
