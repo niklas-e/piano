@@ -8,6 +8,8 @@ export function Keyboard(props: {
   keyIds: readonly string[]
   fingering: readonly Finger[]
   scrollKey?: string
+  /** The key sounding now, while the exercise plays. */
+  playingKeyId?: string
 }) {
   css`
     .keyboard-scroll {
@@ -73,6 +75,13 @@ export function Keyboard(props: {
       );
     }
 
+    .piano-key.white.is-playing,
+    .piano-key.black.is-playing {
+      background: #d46a2c;
+      border-color: #17130f;
+      color: #fffaf2;
+    }
+
     .piano-key strong {
       align-items: center;
       background: #2f251d;
@@ -125,6 +134,31 @@ export function Keyboard(props: {
     hasScrolled = true
   })
 
+  // Follow the key being played, sideways only, so the page doesn't jump.
+  createEffect(() => {
+    const keyId = props.playingKeyId
+    if (!scrollContainer || keyId === undefined) {
+      return
+    }
+
+    const key = scrollContainer.querySelector<HTMLElement>(
+      `[data-testid="key-${keyId}"]`,
+    )
+    if (!key) {
+      return
+    }
+
+    const box = key.getBoundingClientRect()
+    const view = scrollContainer.getBoundingClientRect()
+    if (box.left < view.left || box.right > view.right) {
+      const margin = Number.parseFloat(getComputedStyle(key).scrollMarginLeft)
+      scrollContainer.scrollBy({
+        left: box.left - view.left - margin,
+        behavior: "smooth",
+      })
+    }
+  })
+
   const whiteIndex = (keyIndex: number) =>
     whiteIndexForKey(props.keys, keyIndex)
 
@@ -145,7 +179,7 @@ export function Keyboard(props: {
 
             return (
               <div
-                class={`piano-key ${key.type}${highlighted() ? " is-highlighted" : ""}`}
+                class={`piano-key ${key.type}${highlighted() ? " is-highlighted" : ""}${props.playingKeyId === key.id ? " is-playing" : ""}`}
                 data-testid={`key-${key.id}`}
                 role="img"
                 aria-label={`${key.note}${key.octave}${highlighted() ? " highlighted" : ""}`}

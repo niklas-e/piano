@@ -16,10 +16,16 @@ export function ExerciseStaff(props: {
   clef: Clef
   baseOctave: number
   label: string
+  /** The note sounding now, while the exercise plays. */
+  playingIndex?: number
 }) {
   css`
     .exercise-staff {
       width: 100%;
+    }
+
+    .exercise-staff :global(.is-playing) {
+      fill: #d46a2c;
     }
   `
 
@@ -40,6 +46,16 @@ export function ExerciseStaff(props: {
       // abcjs defaults to Times New Roman, which isn't installed everywhere.
       format: { vocalfont: '"Inter Variable" 13 bold' },
     })
+  })
+
+  // Colours the playing note and its name.
+  createEffect(() => {
+    const index = props.playingIndex
+    for (const selector of [".abcjs-note", ".abcjs-lyric"]) {
+      container.querySelectorAll(selector).forEach((element, position) => {
+        element.classList.toggle("is-playing", position === index)
+      })
+    }
   })
 
   return (

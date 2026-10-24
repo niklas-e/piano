@@ -1,16 +1,28 @@
-import { createEffect, createMemo, createSignal } from "solid-js"
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  on,
+  onCleanup,
+  Show,
+} from "solid-js"
 import { css } from "solid-styled"
+import { startAudio } from "../common/audio"
 import { ExerciseStaff } from "../common/ExerciseStaff"
 import type { Exercise, Hand } from "../common/exercises"
 import { Keyboard } from "../common/Keyboard"
 import { KeyboardMinimap } from "../common/KeyboardMinimap"
 import { buildPianoKeyboard } from "../common/keyboard"
 import { MetronomeControls } from "../common/Metronome"
+import { PhIcon } from "../common/PhIcon"
+import type { Playback } from "../common/piano"
 import {
   derivePracticeRange,
   type PracticeRange,
+  upAndDown,
 } from "../common/practiceRange"
 import {
+  readBpmPreference,
   readHandPreference,
   writeHandPreference,
   writeLastExerciseIdPreference,
@@ -104,6 +116,24 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
       text-align: center;
     }
 
+    .play-button {
+      align-items: center;
+      background: #2f251d;
+      border: 1px solid #2f251d;
+      border-radius: 999px;
+      color: #fffaf2;
+      cursor: pointer;
+      display: inline-flex;
+      font-weight: 900;
+      gap: 0.45rem;
+      min-height: 2.75rem;
+      padding: 0.65rem 1.1rem;
+    }
+
+    .play-message {
+      margin: 0;
+    }
+
     .practice-panel {
       background: #fffaf2;
       border: 1px solid #dfd1bf;
@@ -122,6 +152,66 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
   createEffect(() => {
     writeLastExerciseIdPreference(props.exercise.id)
   })
+
+  const [isPlaying, setIsPlaying] = createSignal(false)
+  const [playingIndex, setPlayingIndex] = createSignal<number>()
+  const [playError, setPlayError] = createSignal(false)
+  let playback: Playback | undefined
+  // Tells a playback that was still loading whether it has been stopped.
+  let playCount = 0
+
+  const stopPlaying = () => {
+    playCount += 1
+    playback?.stop()
+    playback = undefined
+    setIsPlaying(false)
+    setPlayingIndex(undefined)
+  }
+
+  const play = async () => {
+    const context = startAudio()
+    const count = ++playCount
+    const { keyIds } = practice()
+    const order = upAndDown(keyIds.map((_, index) => index))
+    setIsPlaying(true)
+    setPlayError(false)
+
+    try {
+      const { playNotes } = await import("../common/piano")
+      const started = await playNotes(
+        context,
+        order.map((index) => keyIds[index]),
+        readBpmPreference(),
+        (position) => {
+          if (count !== playCount) {
+            return
+          }
+          if (position === undefined) {
+            setIsPlaying(false)
+          }
+          setPlayingIndex(position === undefined ? undefined : order[position])
+        },
+      )
+      if (count === playCount) {
+        playback = started
+      } else {
+        started.stop()
+      }
+    } catch {
+      if (count === playCount) {
+        setIsPlaying(false)
+        setPlayError(true)
+      }
+    }
+  }
+
+  const playingKeyId = () => {
+    const index = playingIndex()
+    return index === undefined ? undefined : practice().keyIds[index]
+  }
+
+  createEffect(on(practice, stopPlaying, { defer: true }))
+  onCleanup(stopPlaying)
 
   const updateHand = (value: string) => {
     const nextHand = value === "left" ? "left" : "right"
@@ -188,6 +278,23 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
             />
           </div>
         </fieldset>
+
+        <button
+          type="button"
+          class="play-button"
+          onClick={() => (isPlaying() ? stopPlaying() : void play())}
+        >
+          <PhIcon
+            name={isPlaying() ? "stop" : "play"}
+            aria-hidden="true"
+            size={18}
+            weight="fill"
+          />
+          {isPlaying() ? "Stop" : "Play"}
+        </button>
+        <Show when={playError()}>
+          <p class="play-message">The piano sound couldn't be loaded.</p>
+        </Show>
       </div>
 
       <section
@@ -199,6 +306,7 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
           clef={practice().clef}
           baseOctave={practice().baseOctave}
           label={`${props.exercise.title} on the staff`}
+          playingIndex={playingIndex()}
         />
         <KeyboardMinimap keys={keyboardKeys} keyIds={practice().keyIds} />
       </section>
@@ -208,6 +316,7 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
         keyIds={practice().keyIds}
         fingering={practice().fingering}
         scrollKey={`${props.exercise.id}:${hand()}:${range()}`}
+        playingKeyId={playingKeyId()}
       />
 
       <MetronomeControls variant="compact" />

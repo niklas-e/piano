@@ -1,7 +1,10 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 import { exercises } from "../../src/common/exercises.ts"
-import { derivePracticeRange } from "../../src/common/practiceRange.ts"
+import {
+  derivePracticeRange,
+  upAndDown,
+} from "../../src/common/practiceRange.ts"
 
 const cMajor = exercises.find((exercise) => exercise.id === "c-major-scale")
 const aMajor = exercises.find((exercise) => exercise.id === "a-major-scale")
@@ -122,4 +125,16 @@ test("derivePracticeRange centres a two-octave scale instead of climbing off the
   const right = derivePracticeRange(aMajor, "right", 2)
   assert.equal(right.keyIds[0], "A3")
   assert.equal(right.keyIds.at(-1), "A5")
+})
+
+test("a run is played up to its top note and back down without repeating it", () => {
+  assert.deepEqual(upAndDown(["C4", "E4", "G4", "C5"]), [
+    "C4",
+    "E4",
+    "G4",
+    "C5",
+    "G4",
+    "E4",
+    "C4",
+  ])
 })

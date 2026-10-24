@@ -121,6 +121,7 @@ export default defineConfig({
         globPatterns: [
           "**/*.{js,mjs,css,html,svg,png,ico,woff2}",
           "pdfjs/**/*.{wasm,pfb,ttf,icc}",
+          "samples/**/*.mp3",
         ],
         // The character maps are only needed for some CJK documents and
         // weigh more than the rest of the app, and the JavaScript decoders

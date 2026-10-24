@@ -57,6 +57,11 @@ export function derivePracticeRange(
   }
 }
 
+/** The order to play a run in: up to its top note and back down again. */
+export function upAndDown<T>(sequence: readonly T[]): readonly T[] {
+  return [...sequence, ...sequence.slice(0, -1).reverse()]
+}
+
 function expandSequence<T>(sequence: readonly T[]): readonly T[] {
   const tail = sequence.slice(1)
   return [...sequence, ...tail]

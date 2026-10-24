@@ -60,6 +60,9 @@ export function AppFooter() {
           <li>
             <a href={`${repositoryUrl}/blob/main/LICENSE`}>AGPL-3.0 license</a>
           </li>
+          <li>
+            <a href={`${repositoryUrl}/blob/main/CREDITS.md`}>Credits</a>
+          </li>
         </ul>
       </div>
     </footer>

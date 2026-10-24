@@ -26,6 +26,10 @@ test("the footer links to the source code and stays at the bottom", async ({
     "href",
     "https://github.com/niklas-e/piano/blob/main/LICENSE",
   )
+  await expect(footer.getByRole("link", { name: "Credits" })).toHaveAttribute(
+    "href",
+    "https://github.com/niklas-e/piano/blob/main/CREDITS.md",
+  )
 
   // On a page shorter than the window, the footer sits at its bottom edge.
   await page.setViewportSize({ width: 1280, height: 2000 })

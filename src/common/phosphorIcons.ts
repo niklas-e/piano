@@ -38,6 +38,8 @@ export const iconModuleLoaders = {
   "upload-simple": () => import("@phosphor-icons/webcomponents/PhUploadSimple"),
   "file-pdf": () => import("@phosphor-icons/webcomponents/PhFilePdf"),
   image: () => import("@phosphor-icons/webcomponents/PhImage"),
+  play: () => import("@phosphor-icons/webcomponents/PhPlay"),
+  stop: () => import("@phosphor-icons/webcomponents/PhStop"),
 } satisfies Record<string, IconModuleLoader>
 
 export type IconName = keyof typeof iconModuleLoaders
