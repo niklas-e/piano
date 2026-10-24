@@ -1,4 +1,4 @@
-import { Cyclist, cat, sequence, silence } from "@strudel/core"
+import { cat } from "@strudel/core"
 import {
   getSampleBuffer,
   type SoundValue,
@@ -7,6 +7,7 @@ import {
   setLogger,
   superdough,
 } from "superdough"
+import type { Beat, BeatClock } from "./beatClock"
 import { NOTE_NAMES } from "./exercises"
 
 // Superdough logs every sample it loads and some notes of its own, which
@@ -35,16 +36,20 @@ export type Playback = { stop(): void }
 let preparedContext: AudioContext | undefined
 
 /**
- * Plays `notes`, such as "C#4", on a piano at one note per beat. `onNote` is
- * called with each note's position as it sounds, and with nothing once the
- * last one has finished or playback is stopped.
+ * Plays `notes`, such as "C#4", on a piano at one note per beat of `clock`, so
+ * they keep time with the metronome. `onNote` is called with each note's
+ * position as it sounds, and with nothing once the last one has finished or
+ * playback is stopped.
  */
 export async function playNotes(
-  context: AudioContext,
+  clock: BeatClock,
   notes: readonly string[],
-  bpm: number,
   onNote: (position: number | undefined) => void,
 ): Promise<Playback> {
+  const context = clock.startAudio()
+  if (!context) {
+    throw new Error("Audio isn't available")
+  }
   if (preparedContext !== context) {
     setAudioContext(context)
     await samples({ piano: pianoSamples })
@@ -65,34 +70,41 @@ export async function playNotes(
     timers.add(timer)
   }
 
-  const cyclist = new Cyclist<Step>({
-    getTime: () => context.currentTime,
-    onTrigger: (hap, _deadline, duration, cps, time) => {
-      const { position, ...sound } = hap.value
-      void superdough(sound, time, duration, cps)
-      at(time, () => onNote(position))
-      if (position === notes.length - 1) {
-        at(time + duration, stop)
+  // A cycle of the pattern is a beat.
+  const pattern = cat(
+    ...notes.map(
+      (note, position): Step => ({ s: "piano", note, release, position }),
+    ),
+  )
+  let cycle = 0
+  const onBeat = ({ time, seconds }: Beat) => {
+    if (cycle === notes.length) {
+      leaveClock()
+      at(time, stop)
+      return
+    }
+
+    for (const hap of pattern.queryArc(cycle, cycle + 1)) {
+      if (!hap.whole || !hap.hasOnset()) {
+        continue
       }
-    },
-  })
+      const { position, ...sound } = hap.value
+      const start = time + (Number(hap.whole.begin) - cycle) * seconds
+      void superdough(sound, start, Number(hap.duration) * seconds, 1 / seconds)
+      at(start, () => onNote(position))
+    }
+    cycle += 1
+  }
+  const leaveClock = clock.join(onBeat)
 
   const stop = () => {
-    cyclist.stop()
+    leaveClock()
     for (const timer of timers) {
       window.clearTimeout(timer)
     }
     timers.clear()
     onNote(undefined)
   }
-
-  // Every note plays in the first cycle. The silent one after it leaves time
-  // to stop before the notes would come round again.
-  const steps = notes.map(
-    (note, position): Step => ({ s: "piano", note, release, position }),
-  )
-  cyclist.setCps(bpm / 60 / notes.length)
-  await cyclist.setPattern(cat(sequence(...steps), silence), true)
 
   return { stop }
 }

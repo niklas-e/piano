@@ -5,6 +5,8 @@ declare global {
     playedKeys: string[]
     playedStaffNotes: number[]
     soundsStarted: number
+    noteTimes: number[]
+    clickTimes: number[]
   }
 }
 
@@ -14,9 +16,11 @@ test.beforeEach(async ({ page }) => {
     window.localStorage.setItem("piano:bpm", "240")
 
     window.soundsStarted = 0
+    window.noteTimes = []
     const start = AudioBufferSourceNode.prototype.start
     AudioBufferSourceNode.prototype.start = function (...args) {
       window.soundsStarted += 1
+      window.noteTimes.push(args[0] ?? 0)
       return start.apply(this, args)
     }
   })
@@ -114,4 +118,39 @@ test("the keyboard follows the notes being played on a phone", async ({
       { intervals: [50], timeout: 10_000 },
     )
     .toBe(true)
+})
+
+test("the piano plays on the metronome's clicks, even when the tempo changes", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.clickTimes = []
+    const start = OscillatorNode.prototype.start
+    OscillatorNode.prototype.start = function (...args) {
+      window.clickTimes.push(args[0] ?? 0)
+      return start.apply(this, args)
+    }
+  })
+  await page.goto("/exercises/c-major-scale")
+
+  await page.getByRole("button", { name: "Start metronome" }).click()
+  await page.waitForFunction(() => window.clickTimes.length >= 2)
+  await page.getByRole("button", { name: "Play" }).click()
+  await page.waitForFunction(() => window.noteTimes.length >= 4)
+  await page.getByRole("button", { name: "-5 BPM" }).click()
+  await expect(page.getByRole("button", { name: "Play" })).toBeVisible({
+    timeout: 10_000,
+  })
+  await page.getByRole("button", { name: "Stop metronome" }).click()
+
+  const { clickTimes, noteTimes } = await page.evaluate(() => ({
+    clickTimes: window.clickTimes,
+    noteTimes: window.noteTimes,
+  }))
+  expect(noteTimes).toHaveLength(15)
+  for (const time of noteTimes) {
+    expect(clickTimes).toContainEqual(time)
+  }
+  // The last notes were a beat at the new tempo apart.
+  expect(noteTimes[14] - noteTimes[13]).toBeCloseTo(60 / 235, 6)
 })

@@ -1,36 +1,28 @@
 // Strudel ships no type declarations; these cover the parts the app uses.
 
 declare module "@strudel/core" {
-  export interface Pattern<T> {
-    readonly __value?: T
+  /** An exact fraction of a cycle. */
+  export interface Fraction {
+    valueOf(): number
   }
 
   export interface Hap<T> {
     value: T
+    /** When the event starts and ends, in cycles. */
+    whole?: { begin: Fraction; end: Fraction }
+    /** Cycles the event lasts. */
+    duration: Fraction
+    /** Whether the event starts within the cycles asked for. */
+    hasOnset(): boolean
   }
 
-  export function sequence<T>(...values: T[]): Pattern<T>
-  export function cat<T>(...patterns: Pattern<T>[]): Pattern<T>
-  export const silence: Pattern<never>
-
-  /** Strudel's scheduler: asks a pattern for its events a little ahead of time. */
-  export class Cyclist<T> {
-    constructor(options: {
-      getTime: () => number
-      onTrigger: (
-        hap: Hap<T>,
-        deadline: number,
-        /** Seconds the event lasts. */
-        duration: number,
-        cps: number,
-        /** When the event starts, on the `getTime` clock. */
-        time: number,
-      ) => void
-    })
-    setCps(cyclesPerSecond: number): void
-    setPattern(pattern: Pattern<T>, autostart?: boolean): Promise<void>
-    stop(): void
+  export interface Pattern<T> {
+    /** The events between the `begin` and `end` cycles. */
+    queryArc(begin: number, end: number): Hap<T>[]
   }
+
+  /** Plays the items one after another, one per cycle. */
+  export function cat<T>(...items: (T | Pattern<T>)[]): Pattern<T>
 }
 
 declare module "superdough" {

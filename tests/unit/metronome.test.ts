@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 import test from "node:test"
+import { createBeatClock } from "../../src/common/beatClock.ts"
 import {
   clampBpm,
   createMetronomeEngine,
@@ -62,7 +63,7 @@ test("metronome engine reports asynchronous audio resume failures", async () => 
   })
 
   try {
-    const engine = createMetronomeEngine(80)
+    const engine = createMetronomeEngine(80, createBeatClock())
     const unsubscribe = engine.onAudioError((message) => {
       audioError = message
     })
@@ -143,7 +144,7 @@ test("metronome engine keeps visual pulses on BPM after async resume failure fre
   })
 
   try {
-    const engine = createMetronomeEngine(120)
+    const engine = createMetronomeEngine(120, createBeatClock())
     engine.onPulse((beat) => pulses.push(beat))
 
     engine.start()
@@ -261,7 +262,7 @@ test("metronome engine keeps visual pulses running when audio graph scheduling t
   })
 
   try {
-    const engine = createMetronomeEngine(120)
+    const engine = createMetronomeEngine(120, createBeatClock())
     engine.onPulse((beat) => pulses.push(beat))
     engine.onAudioError((message) => {
       audioError = message

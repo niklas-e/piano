@@ -1,4 +1,4 @@
-import { type BeatClock, createBeatClock } from "./beatClock.ts"
+import { type BeatClock, beatClock } from "./beatClock.ts"
 import { DEFAULT_BPM, MAX_BPM, MIN_BPM } from "./preferences.ts"
 
 export type MetronomeEngine = {
@@ -67,9 +67,10 @@ export function formatElapsed(ms: number): string {
   return `${minutes}:${String(seconds).padStart(2, "0")}`
 }
 
+/** Clicks on the beats of `clock`, and sets its tempo for everything else on it. */
 export function createMetronomeEngine(
   initialBpm: number,
-  clock: BeatClock = createBeatClock(),
+  clock: BeatClock = beatClock,
 ): MetronomeEngine {
   let audioError: string | undefined
   let leaveClock: (() => void) | undefined
@@ -152,7 +153,6 @@ export function createMetronomeEngine(
     dispose() {
       this.stop()
       stopWatchingAudio()
-      clock.close()
       listeners.clear()
       audioErrorListeners.clear()
     },

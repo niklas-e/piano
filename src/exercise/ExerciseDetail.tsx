@@ -7,7 +7,7 @@ import {
   Show,
 } from "solid-js"
 import { css } from "solid-styled"
-import { startAudio } from "../common/audio"
+import { beatClock } from "../common/beatClock"
 import { ExerciseStaff } from "../common/ExerciseStaff"
 import type { Exercise, Hand } from "../common/exercises"
 import { Keyboard } from "../common/Keyboard"
@@ -22,7 +22,6 @@ import {
   upAndDown,
 } from "../common/practiceRange"
 import {
-  readBpmPreference,
   readHandPreference,
   writeHandPreference,
   writeLastExerciseIdPreference,
@@ -169,7 +168,8 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
   }
 
   const play = async () => {
-    const context = startAudio()
+    // Browsers only start audio from a tap or click, so before any await.
+    beatClock.startAudio()
     const count = ++playCount
     const { keyIds } = practice()
     const order = upAndDown(keyIds.map((_, index) => index))
@@ -179,9 +179,8 @@ export function ExerciseDetail(props: { exercise: Exercise }) {
     try {
       const { playNotes } = await import("../common/piano")
       const started = await playNotes(
-        context,
+        beatClock,
         order.map((index) => keyIds[index]),
-        readBpmPreference(),
         (position) => {
           if (count !== playCount) {
             return

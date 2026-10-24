@@ -28,11 +28,13 @@ export type BeatClock = {
   /** Times beats without audio from now on, after audio has stopped working. */
   reportAudioFailure(): void
   onAudioFailure(callback: () => void): () => void
-  close(): void
 }
 
 const schedulerIntervalMs = 25
 const scheduleAheadSeconds = 0.1
+// Leaves time for sounds that are set up asynchronously, like the piano's, to
+// make the first beat.
+const startDelaySeconds = 0.05
 
 export function createBeatClock(): BeatClock {
   let bpm = DEFAULT_BPM
@@ -106,7 +108,7 @@ export function createBeatClock(): BeatClock {
       if (intervalId === undefined) {
         fallbackStartTime =
           performance.now() - (context?.currentTime ?? 0) * 1000
-        nextBeatTime = currentTime()
+        nextBeatTime = currentTime() + startDelaySeconds
         scheduler()
         intervalId = window.setInterval(scheduler, schedulerIntervalMs)
       }
@@ -123,11 +125,11 @@ export function createBeatClock(): BeatClock {
       failureListeners.add(callback)
       return () => failureListeners.delete(callback)
     },
-    close() {
-      stopScheduler()
-      beatListeners.clear()
-      failureListeners.clear()
-      void context?.close()
-    },
   }
 }
+
+/**
+ * The app's audio and beats. Everything that plays shares it, so the piano
+ * keeps time with the metronome, starting on its next click.
+ */
+export const beatClock = createBeatClock()
