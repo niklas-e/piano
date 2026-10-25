@@ -197,8 +197,10 @@ export function SightReadingPage() {
       padding: 0.5rem 0.25rem;
     }
 
-    .answer-grid button:hover {
-      background: #e7d8c2;
+    @media (hover: hover) {
+      .answer-grid button:hover {
+        background: #e7d8c2;
+      }
     }
 
     .results-list {

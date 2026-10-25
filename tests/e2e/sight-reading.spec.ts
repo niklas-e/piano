@@ -67,6 +67,24 @@ test("answering a note shows correct/incorrect feedback", async ({ page }) => {
   await expect(panel).toHaveClass(/flash-(correct|wrong)/)
 })
 
+test.describe("on a touch screen", () => {
+  test.use({ hasTouch: true })
+
+  test("the last answer tapped doesn't stay highlighted", async ({ page }) => {
+    await startGame(page)
+
+    const buttons = page.locator(".answer-grid button")
+    const background = (index: number) =>
+      buttons
+        .nth(index)
+        .evaluate((button) => getComputedStyle(button).backgroundColor)
+    // Touch browsers leave the tapped button hovered, as hovering it does here.
+    await buttons.first().hover()
+
+    expect(await background(0)).toBe(await background(1))
+  })
+})
+
 test.describe("sound", () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
