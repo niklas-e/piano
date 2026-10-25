@@ -76,22 +76,37 @@ test.describe("sound", () => {
         window.soundsStarted += 1
         return start.apply(this, args)
       }
+      // Always draws the lowest treble note, an E, so the answer is known.
+      Math.random = () => 0
     })
+    await page.goto("/sight-reading")
+    await page.getByRole("button", { name: "Treble" }).click()
   })
 
-  test("the answered note sounds on the piano", async ({ page }) => {
-    await startGame(page)
+  test("a correctly named note sounds on the piano", async ({ page }) => {
+    await page.getByRole("button", { name: "Start" }).click()
 
-    await page.locator(".answer-grid button").first().click()
+    await page.getByRole("button", { name: "Answer E", exact: true }).click()
     await page.waitForFunction(() => window.soundsStarted === 1)
   })
 
+  test("a wrongly named note doesn't sound", async ({ page }) => {
+    await page.getByRole("button", { name: "Start" }).click()
+
+    await page.getByRole("button", { name: "Answer F", exact: true }).click()
+    await expect(page.locator(".feedback-mark")).toHaveCount(0)
+    // Had the wrong answer played too, it would sound alongside this one.
+    await page.getByRole("button", { name: "Answer E", exact: true }).click()
+    await page.waitForFunction(() => window.soundsStarted === 1)
+    await page.waitForTimeout(500)
+    expect(await page.evaluate(() => window.soundsStarted)).toBe(1)
+  })
+
   test("sound can be turned off, and stays off", async ({ page }) => {
-    await page.goto("/sight-reading")
     await page.getByRole("button", { name: "Off" }).click()
     await page.getByRole("button", { name: "Start" }).click()
 
-    await page.locator(".answer-grid button").first().click()
+    await page.getByRole("button", { name: "Answer E", exact: true }).click()
     await expect(page.locator(".feedback-mark")).toBeVisible()
     await expect(page.locator(".feedback-mark")).toHaveCount(0)
     expect(await page.evaluate(() => window.soundsStarted)).toBe(0)

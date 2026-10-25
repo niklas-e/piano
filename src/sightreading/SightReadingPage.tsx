@@ -329,7 +329,7 @@ export function SightReadingPage() {
         { note: current.note, clef: current.clef, picked: name },
       ])
     }
-    if (sound()) {
+    if (isCorrect && sound()) {
       playNoteOf(current.note)
     }
     // Flash feedback on the answered note, then advance to the next one.
